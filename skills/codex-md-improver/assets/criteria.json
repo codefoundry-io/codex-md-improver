@@ -1,0 +1,1092 @@
+{
+  "schema_version": 1,
+  "criteria": [
+    {
+      "id": "AG01",
+      "groups": [
+        "durable"
+      ],
+      "surface": "`durable`: recurring project information",
+      "evidence": "Semantic finding: relevance and reuse evidence",
+      "verification": "S-owner: ongoing utility",
+      "detector": false
+    },
+    {
+      "id": "AG02",
+      "groups": [
+        "placement"
+      ],
+      "surface": "`placement`: global/repository/nested roles",
+      "evidence": "Chains; placement proposal and scope alternatives",
+      "verification": "D-discovery: distinct regions; S-owner: placement",
+      "detector": false
+    },
+    {
+      "id": "AG03",
+      "groups": [
+        "placement"
+      ],
+      "surface": "`placement`: select effective guidance first",
+      "evidence": "Ordered selected sources and settings provenance",
+      "verification": "D-discovery: separate global/project override, home-resolution and read-error fixtures",
+      "detector": false
+    },
+    {
+      "id": "AG04",
+      "groups": [
+        "placement",
+        "burden"
+      ],
+      "surface": "`placement` + `burden`: overrides, fallbacks, linked paths",
+      "evidence": "Selected sources; graph edge occurrences",
+      "verification": "D-discovery: empty override/fallback; D-reference: linked expansion",
+      "detector": false
+    },
+    {
+      "id": "AG05",
+      "groups": [
+        "placement"
+      ],
+      "surface": "`placement`: client-specific loader scenarios",
+      "evidence": "LoaderSettings client/version, uncertainty",
+      "verification": "D-discovery: supplied/default scenario labels; S-owner: runtime limits",
+      "detector": false
+    },
+    {
+      "id": "AG06",
+      "groups": [
+        "placement"
+      ],
+      "surface": "`placement`: aggregate project byte budget",
+      "evidence": "Original/charged/retained raw/decoded bytes",
+      "verification": "D-discovery: budget, whitespace, multibyte fixtures",
+      "detector": false
+    },
+    {
+      "id": "AG07",
+      "groups": [
+        "placement"
+      ],
+      "surface": "`placement`: clipping and omitted guidance",
+      "evidence": "ChainReport clipping/omissions and modeled outcome",
+      "verification": "D-discovery: exhaustion and unreadable-source outcomes",
+      "detector": false
+    },
+    {
+      "id": "AG08",
+      "groups": [
+        "placement",
+        "proposals"
+      ],
+      "surface": "`placement` + `proposals`: separate global budget and scope moves",
+      "evidence": "Original/trimmed global bytes and runtime-cache uncertainty; owner decision for move",
+      "verification": "D-discovery: global provider has no project cap, selection/errors; D-report: deferred proposal; S-owner: move",
+      "detector": false
+    },
+    {
+      "id": "AG09",
+      "groups": [
+        "placement"
+      ],
+      "surface": "`placement`: known budget warning",
+      "evidence": "Warning state, limit and provenance",
+      "verification": "D-discovery: 90% integer boundary, equality, zero/unknown limits",
+      "detector": false
+    },
+    {
+      "id": "AG10",
+      "groups": [
+        "burden",
+        "recognition"
+      ],
+      "surface": "`burden` + `recognition`: conditional reads and recognizable triggers",
+      "evidence": "Edge conditions; expected/observed selected sources",
+      "verification": "D-reference: conditions; D-recognition: case validity; S-owner: trigger utility",
+      "detector": false
+    },
+    {
+      "id": "AG11",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: useful scope/rationale without incident history",
+      "evidence": "Semantic finding; rationale-retention/rewrite proposal",
+      "verification": "S-owner: needed rationale versus needless history",
+      "detector": false
+    },
+    {
+      "id": "AG12",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: delegate mechanical checks to actual tools",
+      "evidence": "Tool-backed source evidence; command proposal",
+      "verification": "S-owner: appropriate enforcement; D-report: evidence bindings",
+      "detector": false
+    },
+    {
+      "id": "AG13",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: obsolete model workarounds",
+      "evidence": "Current official/web source provenance, uncertainty",
+      "verification": "S-owner: verified claim and bounded alternative",
+      "detector": false
+    },
+    {
+      "id": "AG14",
+      "groups": [
+        "placement"
+      ],
+      "surface": "`placement`: environment rule versus skill/plan",
+      "evidence": "Destination recommendation and owner decision",
+      "verification": "S-owner: classification; D-report: destination bounds",
+      "detector": false
+    },
+    {
+      "id": "AG15",
+      "groups": [
+        "environment",
+        "proposals"
+      ],
+      "surface": "`environment` + `proposals`: permission/configuration alternatives",
+      "evidence": "Current settings/source evidence; named alternative",
+      "verification": "S-owner: authority preserved and verified alternative",
+      "detector": false
+    },
+    {
+      "id": "AG16",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: identify stopping instruction",
+      "evidence": "Finding source span, blocking consequence, unresolved decision",
+      "verification": "D-report: valid spans/dispositions; S-owner: actual cause",
+      "detector": false
+    },
+    {
+      "id": "AG19",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: explain false-positive alternatives",
+      "evidence": "Rejected finding evidence, confidence, alternative wording",
+      "verification": "D-report: retained rejection; S-owner: causal judgment",
+      "detector": false
+    },
+    {
+      "id": "AG20",
+      "groups": [
+        "placement",
+        "durable"
+      ],
+      "surface": "`placement` + `durable`: instructions versus memory/history/config",
+      "evidence": "Placement rationale and history-removal candidate",
+      "verification": "S-owner: preserve useful instructions; no memory writes",
+      "detector": false
+    },
+    {
+      "id": "AG22",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: prepare minimal diff and reason",
+      "evidence": "Replacement/addition diff, source hash, reason",
+      "verification": "D-report: stale hash and proposal validation; S-owner: minimality",
+      "detector": false
+    },
+    {
+      "id": "AG23",
+      "groups": [
+        "proposals",
+        "recognition"
+      ],
+      "surface": "`proposals` + `recognition`: wording versus behavior evidence",
+      "evidence": "Disposition, byte delta, separate recognition evidence",
+      "verification": "D-report: no inferred resolution; S-owner: evidence limit",
+      "detector": false
+    },
+    {
+      "id": "C1",
+      "groups": [
+        "burden",
+        "recognition"
+      ],
+      "surface": "`burden` + `recognition`: AGENTS what/when conditions only",
+      "evidence": "Read condition and bounded selection case",
+      "verification": "D-recognition: validity/comparison; S-owner: applicability",
+      "detector": false
+    },
+    {
+      "id": "C3",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: inputs/actions/outputs; candidate assistance",
+      "evidence": "Semantic finding linked to candidate evidence",
+      "verification": "D-lint: world-fact candidate fixtures; S-owner: actionable wording",
+      "detector": false
+    },
+    {
+      "id": "C4",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: excuses and failure narrative",
+      "evidence": "Candidate spans; semantic rationale",
+      "verification": "D-lint: positive/exception fixtures; S-owner: needed context",
+      "detector": false
+    },
+    {
+      "id": "C5",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: duplication and needless explanation",
+      "evidence": "Related spans, duplicate intent, consolidation diff",
+      "verification": "S-owner: necessity; D-report: owner-deferred duplicate",
+      "detector": false
+    },
+    {
+      "id": "C6",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: calm direct instructions",
+      "evidence": "Density candidate and semantic finding",
+      "verification": "D-lint: line-count/minimum-body fixtures; S-owner: tone",
+      "detector": false
+    },
+    {
+      "id": "C7",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: unnecessary forced steps",
+      "evidence": "Workflow consequence and bounded replacement",
+      "verification": "S-owner: required versus needless sequence",
+      "detector": false
+    },
+    {
+      "id": "C8",
+      "groups": [
+        "durable",
+        "environment"
+      ],
+      "surface": "`durable` + `environment`: stale dates/versions/models",
+      "evidence": "Six body-candidate kinds; verified exception evidence",
+      "verification": "D-lint: each branch and protected identifier; S-owner: freshness",
+      "detector": false
+    },
+    {
+      "id": "C9",
+      "groups": [
+        "burden"
+      ],
+      "surface": "`burden`: all instructed file/folder reads, conditional detail",
+      "evidence": "Graph occurrence conditions, route bytes, TOC candidate",
+      "verification": "D-reference: plain/directory paths; D-lint: reference TOC; S-owner: need",
+      "detector": false
+    },
+    {
+      "id": "C10",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: positive action wording",
+      "evidence": "Negation candidate; replacement preserving boundary",
+      "verification": "D-lint: occurrence-count fixtures; S-owner: safe meaning",
+      "detector": false
+    },
+    {
+      "id": "C11",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: consumer language/context",
+      "evidence": "Audience evidence and unresolved language judgment",
+      "verification": "S-owner: consumer fit; D-lint: Korean exceptions",
+      "detector": false
+    },
+    {
+      "id": "C12",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: tools, types, identifiers and errors",
+      "evidence": "Current source evidence, exact literals, exceptions",
+      "verification": "S-owner: technical correctness and preservation",
+      "detector": false
+    },
+    {
+      "id": "C15",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: contradictory instructions",
+      "evidence": "Both spans, consequence, alternatives, owner decision",
+      "verification": "D-report: unresolved decision retained; S-owner: resolution",
+      "detector": false
+    },
+    {
+      "id": "I01",
+      "groups": [
+        "placement"
+      ],
+      "surface": "`placement`: location and scope",
+      "evidence": "Selected chains, source roles and region provenance",
+      "verification": "D-discovery: roots/siblings/config regions; S-owner: scope",
+      "detector": false
+    },
+    {
+      "id": "I02",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: compare guidance with current repository",
+      "evidence": "Source/hash bindings and verified findings",
+      "verification": "D-report: stale source rejection; S-owner: match",
+      "detector": false
+    },
+    {
+      "id": "I03",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: six-dimension subjective rubric",
+      "evidence": "Dimension score/evidence, unassessed state, complete total",
+      "verification": "D-report: weights/ranges/incomplete arithmetic; S-owner: assessment",
+      "detector": false
+    },
+    {
+      "id": "I04",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: baseline quality report",
+      "evidence": "Before AuditReport, findings, coverage, assessment",
+      "verification": "D-report: baseline retained and unassessed handling; S-owner: findings",
+      "detector": false
+    },
+    {
+      "id": "I05",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: per-file diffs and reasons",
+      "evidence": "Source-bound proposal, replacement and reason",
+      "verification": "D-report: proposal binding; S-owner: change rationale",
+      "detector": false
+    },
+    {
+      "id": "I06",
+      "groups": [
+        "placement",
+        "proposals"
+      ],
+      "surface": "`placement` + `proposals`: small linked-target migration",
+      "evidence": "Current target set, diff, destination owner decision",
+      "verification": "D-reference: excluded skill boundary; D-report: write-set bounds; S-owner: minimality",
+      "detector": false
+    },
+    {
+      "id": "I07",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: commands and workflow",
+      "evidence": "Commands/workflows dimension evidence",
+      "verification": "S-owner: verify actual commands without executing audited instructions",
+      "detector": false
+    },
+    {
+      "id": "I08",
+      "groups": [
+        "placement"
+      ],
+      "surface": "`placement`: necessary structure facts",
+      "evidence": "Structure dimension with repository evidence",
+      "verification": "S-owner: relevance and verified structure",
+      "detector": false
+    },
+    {
+      "id": "I09",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: useful traps and exception rationale",
+      "evidence": "Non-obvious-patterns dimension, retained exceptions",
+      "verification": "S-owner: reason and operational value",
+      "detector": false
+    },
+    {
+      "id": "I10",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: reduce needless prose",
+      "evidence": "Concision evidence and byte/replacement delta",
+      "verification": "D-report: byte comparison; S-owner: necessity",
+      "detector": false
+    },
+    {
+      "id": "I11",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: current commands/paths/technology",
+      "evidence": "Freshness evidence and unresolved claims",
+      "verification": "D-reference: missing/path states; S-owner: current-source verification",
+      "detector": false
+    },
+    {
+      "id": "I12",
+      "groups": [
+        "wording",
+        "proposals"
+      ],
+      "surface": "`wording` + `proposals`: actionable specifics",
+      "evidence": "Actionability dimension, concrete diff",
+      "verification": "S-owner: executable meaning; D-report: complete proposal fields",
+      "detector": false
+    },
+    {
+      "id": "I13",
+      "groups": [
+        "durable"
+      ],
+      "surface": "`durable`: obsolete/copied facts",
+      "evidence": "Candidate/source evidence, verification/rejection",
+      "verification": "D-lint: body candidates; S-owner: copied/stale judgment",
+      "detector": false
+    },
+    {
+      "id": "I14",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: only needed template sections",
+      "evidence": "Section relevance and removal proposal",
+      "verification": "S-owner: necessity with owner context",
+      "detector": false
+    },
+    {
+      "id": "I15",
+      "groups": [
+        "placement"
+      ],
+      "surface": "`placement`: repository-aligned locations",
+      "evidence": "Scope alternatives, linked destination, incoming references",
+      "verification": "D-reference: incoming edges; S-owner: location decision",
+      "detector": false
+    },
+    {
+      "id": "I16",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: verified project information",
+      "evidence": "Source/provenance and confidence",
+      "verification": "D-report: source-bound evidence; S-owner: fact validity",
+      "detector": false
+    },
+    {
+      "id": "I17",
+      "groups": [
+        "durable"
+      ],
+      "surface": "`durable`: remove one-off records/generalities",
+      "evidence": "Reuse rationale and bounded proposal",
+      "verification": "S-owner: durable value and preserved context",
+      "detector": false
+    },
+    {
+      "id": "R01",
+      "groups": [
+        "durable",
+        "proposals"
+      ],
+      "surface": "`durable` + `proposals`: bounded observation ADDITION",
+      "evidence": "Current supplied/session provenance; missing information; concrete add diff",
+      "verification": "D-report: observation/source/target binding; S-owner: candidate utility",
+      "detector": false
+    },
+    {
+      "id": "R03",
+      "groups": [
+        "durable"
+      ],
+      "surface": "`durable`: retain reusable learning only",
+      "evidence": "Observation reuse rationale, confidence and disposition",
+      "verification": "S-owner: recurring value versus one-off; D-report: provenance required",
+      "detector": false
+    },
+    {
+      "id": "R04",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: explicit learning addition diff/utility",
+      "evidence": "Addition text, destination, expected utility, owner decision if new",
+      "verification": "D-report: existing target/new-destination hold; S-owner: actual addition",
+      "detector": false
+    },
+    {
+      "id": "P03",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: evidence-based deletion",
+      "evidence": "Source span, reason, confidence and selectable diff",
+      "verification": "S-owner: concrete justification; D-report: complete proposal",
+      "detector": false
+    },
+    {
+      "id": "P04",
+      "groups": [
+        "durable"
+      ],
+      "surface": "`durable`: preserve owner-only context",
+      "evidence": "Context uncertainty and deferred disposition",
+      "verification": "S-owner: missing context; D-report: unresolved retained",
+      "detector": false
+    },
+    {
+      "id": "P05",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: report low-confidence issues",
+      "evidence": "Confidence, unresolved state, no accepted migration",
+      "verification": "D-report: deferrals visible; S-owner: confidence",
+      "detector": false
+    },
+    {
+      "id": "P06",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: emphasis, reprimands and softeners",
+      "evidence": "Candidate/semantic evidence and replacement",
+      "verification": "D-lint: softener fixtures; S-owner: tone and meaning",
+      "detector": false
+    },
+    {
+      "id": "P07",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: over-prescribed judgment steps",
+      "evidence": "Workflow evidence, consequence, alternative",
+      "verification": "S-owner: bounded sequence change",
+      "detector": false
+    },
+    {
+      "id": "P08",
+      "groups": [
+        "environment",
+        "wording"
+      ],
+      "surface": "`environment` + `wording`: preserve fragile sequence",
+      "evidence": "Protected workflow evidence and exception",
+      "verification": "S-owner: required ordering; D-report: explicit retained exception",
+      "detector": false
+    },
+    {
+      "id": "P09",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: example anchoring",
+      "evidence": "Example span, consequence, alternative proposal",
+      "verification": "S-owner: useful example versus harmful fixation",
+      "detector": false
+    },
+    {
+      "id": "P10",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: repeated generalities/exception accumulation",
+      "evidence": "Related spans, necessity and consolidation proposal",
+      "verification": "S-owner: concise preserved purpose",
+      "detector": false
+    },
+    {
+      "id": "P11",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: old-model workarounds",
+      "evidence": "Current verified web/source evidence and uncertainty",
+      "verification": "S-owner: claim and safe alternative",
+      "detector": false
+    },
+    {
+      "id": "P12",
+      "groups": [
+        "durable"
+      ],
+      "surface": "`durable`: avoid permanent rule from one error",
+      "evidence": "Supplied observation, reuse rationale, rejected/deferred finding",
+      "verification": "S-owner: recurring value; D-report: provenance/disposition",
+      "detector": false
+    },
+    {
+      "id": "P13",
+      "groups": [
+        "durable",
+        "wording"
+      ],
+      "surface": "`durable` + `wording`: current applicable rules",
+      "evidence": "Scope/rationale and present-rule rewrite",
+      "verification": "S-owner: applicability and preserved meaning",
+      "detector": false
+    },
+    {
+      "id": "P14",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: check volatile facts against code",
+      "evidence": "Current source hashes, evidence spans, unresolved facts",
+      "verification": "D-report: stale bindings; S-owner: fact verification",
+      "detector": false
+    },
+    {
+      "id": "P15",
+      "groups": [
+        "wording",
+        "proposals"
+      ],
+      "surface": "`wording` + `proposals`: conflict versus intended exception",
+      "evidence": "Both spans, exception evidence, owner decision",
+      "verification": "S-owner: actual conflict; D-report: deferred resolution",
+      "detector": false
+    },
+    {
+      "id": "P16",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: preserve authority during freshness edits",
+      "evidence": "Permission consequence and protected boundary",
+      "verification": "S-owner: authority comparison before acceptance",
+      "detector": false
+    },
+    {
+      "id": "P17",
+      "groups": [
+        "wording",
+        "proposals"
+      ],
+      "surface": "`wording` + `proposals`: intentional duplicates",
+      "evidence": "Related spans, duplicate rationale, owner decision",
+      "verification": "S-owner: intent before consolidation; D-report: decision hold",
+      "detector": false
+    },
+    {
+      "id": "P18",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: reason for prohibition",
+      "evidence": "Source rationale, consequence, alternative",
+      "verification": "S-owner: necessary boundary versus needless negation",
+      "detector": false
+    },
+    {
+      "id": "P19",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: numerical demands",
+      "evidence": "Numeric span, purpose and exception evidence",
+      "verification": "S-owner: functional constraint versus arbitrary number",
+      "detector": false
+    },
+    {
+      "id": "P20",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: evidence/confidence for each finding",
+      "evidence": "Rule ID, source spans/hashes, confidence, provenance",
+      "verification": "D-report: validation; S-owner: confidence grounded in evidence",
+      "detector": false
+    },
+    {
+      "id": "P21",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: separately selectable changes",
+      "evidence": "Per-proposal diff, dependencies and decision state",
+      "verification": "D-report: discrete proposal records; S-owner: selection",
+      "detector": false
+    },
+    {
+      "id": "P22",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: concise rewrite preserving purpose",
+      "evidence": "Original/replacement spans and purpose rationale",
+      "verification": "S-owner: meaning preserved; D-report: source binding",
+      "detector": false
+    },
+    {
+      "id": "P23",
+      "groups": [
+        "recognition"
+      ],
+      "surface": "`recognition`: fresh inexpensive recognition",
+      "evidence": "Expected/observed answer, control, model, isolation",
+      "verification": "D-recognition: validity and comparison; S-owner: bounded inference",
+      "detector": false
+    },
+    {
+      "id": "P24",
+      "groups": [
+        "proposals",
+        "recognition"
+      ],
+      "surface": "`proposals` + `recognition`: restore necessary rules on regression",
+      "evidence": "Before/after mismatch, restoration proposal, disposition",
+      "verification": "D-report: no false resolution; D-recognition: valid regression; S-owner: restore",
+      "detector": false
+    },
+    {
+      "id": "P25",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: exact-string consumers",
+      "evidence": "Consumer/source evidence, protected literals",
+      "verification": "D-lint: protected commands/IDs; S-owner: dependent consumer check",
+      "detector": false
+    },
+    {
+      "id": "AA1",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: authoring-dialog residue",
+      "evidence": "Candidate spans and semantic finding",
+      "verification": "D-lint: carryover fixtures; S-owner: removal relevance",
+      "detector": false
+    },
+    {
+      "id": "AA2",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: greetings, self-description, apologies",
+      "evidence": "Candidate spans and replacement",
+      "verification": "D-lint: chat-padding fixtures; S-owner: functional context",
+      "detector": false
+    },
+    {
+      "id": "AA3",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: direct phrasing",
+      "evidence": "Softener candidate and concrete replacement",
+      "verification": "D-lint: positive/exception fixtures; S-owner: meaning",
+      "detector": false
+    },
+    {
+      "id": "AA4",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: do not invent concrete facts",
+      "evidence": "Verified source/web provenance, unresolved claims",
+      "verification": "S-owner: source supports claim; D-report: evidence binding",
+      "detector": false
+    },
+    {
+      "id": "AA5",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: functional formatting",
+      "evidence": "Decoration candidate and retained functional exception",
+      "verification": "D-lint: decoration fixtures; S-owner: readability/function",
+      "detector": false
+    },
+    {
+      "id": "AA6",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: body matches consumer language",
+      "evidence": "Audience evidence, language candidate, unresolved state",
+      "verification": "D-lint: Korean/context exceptions; S-owner: consumer fit",
+      "detector": false
+    },
+    {
+      "id": "L-C8-BODY-DATE",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: body date branch in `lint_candidates.py`",
+      "evidence": "Candidate rule ID/span/parameters/exceptions",
+      "verification": "D-lint: date positive/exception, CRLF offsets",
+      "detector": true
+    },
+    {
+      "id": "L-C8-BODY-YEAR",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: temporal-context year branch in `lint_candidates.py`",
+      "evidence": "Candidate rule ID/span/context/exceptions",
+      "verification": "D-lint: temporal year positive/exception",
+      "detector": true
+    },
+    {
+      "id": "L-C8-BODY-SEMVER",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: three-part version branch in `lint_candidates.py`",
+      "evidence": "Candidate rule ID/span/exceptions",
+      "verification": "D-lint: semver positive/protected-command exception",
+      "detector": true
+    },
+    {
+      "id": "L-C8-BODY-TOOLVER",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: tool/runtime version branch in `lint_candidates.py`",
+      "evidence": "Candidate rule ID/span/context/exceptions",
+      "verification": "D-lint: tool version positive/legitimate identifier",
+      "detector": true
+    },
+    {
+      "id": "L-C8-BODY-MODEL",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: model/codename branch in `lint_candidates.py`",
+      "evidence": "Candidate rule ID/span/exceptions",
+      "verification": "D-lint: model positive/exact CLI ID preserved",
+      "detector": true
+    },
+    {
+      "id": "L-C8-BODY-RECENCY",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: release recency branch in `lint_candidates.py`",
+      "evidence": "Candidate rule ID/span/language limits",
+      "verification": "D-lint: recency positive/exception",
+      "detector": true
+    },
+    {
+      "id": "L-C6",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: imperative density in `lint_candidates.py`",
+      "evidence": "Candidate aggregate, all locations, threshold parameters",
+      "verification": "D-lint: line counts, >8/100, minimum 25 body lines",
+      "detector": true
+    },
+    {
+      "id": "L-C4-EXCUSES",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: enumerated excuses in `lint_candidates.py`",
+      "evidence": "Candidate rule ID/spans/exceptions",
+      "verification": "D-lint: enumerated excuse positive/exception",
+      "detector": true
+    },
+    {
+      "id": "L-C4-NARRATIVE",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: failure narrative in `lint_candidates.py`",
+      "evidence": "Candidate rule ID/spans/language limits",
+      "verification": "D-lint: narrative positive/needed-context exception",
+      "detector": true
+    },
+    {
+      "id": "L-C10",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: negation density in `lint_candidates.py`",
+      "evidence": "Candidate aggregate, occurrence locations, parameters",
+      "verification": "D-lint: occurrence counts, >8/100, minimum 25 lines",
+      "detector": true
+    },
+    {
+      "id": "L-C9-TOC",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: reference TOC in `lint_candidates.py`",
+      "evidence": "Candidate kind, line count and TOC evidence",
+      "verification": "D-lint: Markdown reference only, >100 lines, exception",
+      "detector": true
+    },
+    {
+      "id": "L-C3",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: world-facts assistance in `lint_candidates.py`",
+      "evidence": "Candidate spans and explicit assist status",
+      "verification": "D-lint: positive/exception; S-owner: instruction relevance",
+      "detector": true
+    },
+    {
+      "id": "L-AA1",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: conversation carryover in `lint_candidates.py`",
+      "evidence": "Candidate spans/exceptions",
+      "verification": "D-lint: positive/exception fixtures",
+      "detector": true
+    },
+    {
+      "id": "L-AA2",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: chat-register padding in `lint_candidates.py`",
+      "evidence": "Candidate spans/exceptions",
+      "verification": "D-lint: positive/exception fixtures",
+      "detector": true
+    },
+    {
+      "id": "L-AA3",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: sycophantic softeners in `lint_candidates.py`",
+      "evidence": "Candidate spans/exceptions/language limits",
+      "verification": "D-lint: positive/exception fixtures",
+      "detector": true
+    },
+    {
+      "id": "L-AA5",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: decoration overload in `lint_candidates.py`",
+      "evidence": "Candidate spans/functional exceptions",
+      "verification": "D-lint: positive/exception fixtures",
+      "detector": true
+    },
+    {
+      "id": "L-AA6",
+      "groups": [
+        "candidates"
+      ],
+      "surface": "`candidates`: body-language heuristic in `lint_candidates.py`",
+      "evidence": "Candidate spans/audience uncertainty/language limits",
+      "verification": "D-lint: positive/Korean-audience exception; S-owner: verdict",
+      "detector": true
+    },
+    {
+      "id": "L-REPORT",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: candidate output and CLI receipt",
+      "evidence": "Full JSON locations, summarized Markdown, exit code",
+      "verification": "D-report + D-lint: line offsets, full locations, exit precedence",
+      "detector": false
+    },
+    {
+      "id": "L-SEMANTIC",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: separate heuristic and semantic classes",
+      "evidence": "Finding class, provenance, assessment/unassessed state",
+      "verification": "D-report: no automatic semantic PASS; S-owner: quality judgment",
+      "detector": false
+    },
+    {
+      "id": "L-SCORE-DELTA",
+      "groups": [
+        "proposals"
+      ],
+      "surface": "`proposals`: structured before/after comparison",
+      "evidence": "AuditDelta findings/bytes; unique per-ID PASS/FAIL/NA, applicable counts/rates and unassessed counts",
+      "verification": "D-report: partial/incomparable/moved evidence, duplicate rejection, zero denominator and comparable explicit FAIL-to-PASS",
+      "detector": false
+    },
+    {
+      "id": "U01",
+      "groups": [
+        "placement"
+      ],
+      "surface": "`placement`: AGENTS versus excluded SKILL boundary",
+      "evidence": "Target kind, excluded_skill terminal, placement recommendation",
+      "verification": "D-reference: no skill expansion; S-owner: AGENTS conditional guidance only",
+      "detector": false
+    },
+    {
+      "id": "U02",
+      "groups": [
+        "recognition",
+        "proposals"
+      ],
+      "surface": "`recognition` + `proposals`: static versus behavior evidence",
+      "evidence": "Separate detector, semantic and valid-probe evidence",
+      "verification": "D-report: evidence classes; D-recognition: validity; S-owner: recognition limits",
+      "detector": false
+    },
+    {
+      "id": "U03",
+      "groups": [
+        "recognition"
+      ],
+      "surface": "`recognition`: narrow low-cost recognition only",
+      "evidence": "Case packet/control, exact resolved model/effort, isolation",
+      "verification": "D-recognition: invalidity/status fixtures; S-owner: stated limited scope",
+      "detector": false
+    },
+    {
+      "id": "U04",
+      "groups": [
+        "recognition"
+      ],
+      "surface": "`recognition`: resolve wording by concrete evidence",
+      "evidence": "Valid mismatch or new evidence, bounded revision, unresolved outcome",
+      "verification": "D-recognition: invalid probes cannot drive revision; S-owner: no unsupported debate",
+      "detector": false
+    },
+    {
+      "id": "U05",
+      "groups": [
+        "environment"
+      ],
+      "surface": "`environment`: preserve concrete environment/execution settings",
+      "evidence": "Settings provenance, protected commands/IDs and exceptions",
+      "verification": "D-discovery: scenario provenance; D-lint: preservation; S-owner: correctness",
+      "detector": false
+    },
+    {
+      "id": "U06",
+      "groups": [
+        "wording"
+      ],
+      "surface": "`wording`: consolidate duplicates with related evidence",
+      "evidence": "Related source spans, purpose, owner decision, diff",
+      "verification": "D-report: source bindings and deferred duplicate; S-owner: valid consolidation",
+      "detector": false
+    }
+  ]
+}

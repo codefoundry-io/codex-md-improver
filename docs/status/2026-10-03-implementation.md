@@ -127,7 +127,10 @@ GREEN passed focused 40/full 83 tests and the skill validator; final source
 re-review found no actionable finding. See the Task 2 implementation evidence.
 Task 3 selected detectors are complete: final fresh dedicated GREEN passed
 focused 13/full 96 tests and the validator; scoped source re-review found no
-remaining concrete defect. Reporting, recognition and packaging remain. The
+remaining concrete defect. Task 4 reporting is complete: final dedicated GREEN
+passed 71 focused / 127 full tests and the validator; scoped source reviews
+confirmed the final corrections, and a synthetic report preserved all input
+hashes. See the Task 4 implementation evidence. Recognition and packaging remain. The
 owner now selects Sol/medium with no inherited history for recognition choices;
 wording plateaus use one consolidated revision followed by observed decisions.
 No target migration, remote publication, tag/release, final merge
