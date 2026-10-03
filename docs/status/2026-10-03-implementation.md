@@ -1,6 +1,6 @@
 # Implementation state
 
-Updated: 2026-10-03.
+Updated: 2026-10-04.
 
 The owner authorized formal plan review, implementation and pre-merge review.
 MIT is selected. The owner adopted structured before/after verdict aggregation:
@@ -233,3 +233,18 @@ skip on macOS), with53 immutable fingerprints/status and exact fixture cleanup.
 Scoped independent review is clean; the new14-file candidate is built. The
 corrected commit still needs native CI and complete fresh four-leg review. No
 final merge, tag/Release or actual owner installation has occurred.
+
+Commit `9de4be8` passed native CI run `37134812267`: Ubuntu each passed262,
+macOS each passed261 with one Linux-only skip, plus the Python3.10 guard.
+Full code R8 was BLOCKED with all four complete: Astra and Opus requested fixes;
+Pro and Flash approved. The [R8 report](../reviews/2026-10-04-formal-code-r8.md)
+records first-definition precedence, candidate/source snapshot binding, native
+case-alias exclusions, the README cap correction, and a separately reproduced
+report revalidation gap for recorded external Git storage. Qualified and unrun
+test drafts were preserved and distinguished from valid dedicated RED evidence.
+Final fresh GREEN passed16 focused and278 full methods plus the validator. All
+four native case checks executed; the full suite skipped one Linux-only test.
+All57 source/test fingerprints and status were preserved, exact cleanup confirmed,
+and independent scoped re-review was clean. The current14-file candidate is built.
+The corrected commit still requires native CI and a new full four-leg review.
+No final merge, tag/Release or actual owner installation has occurred.

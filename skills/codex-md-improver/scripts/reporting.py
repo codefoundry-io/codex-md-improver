@@ -169,10 +169,12 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
         if node.get("content_status") == "read":
             for alias in node["aliases"]:
                 aliases[alias] = node["sha256"]
-    from discovery import _Content, _POLICY
+    from discovery import _Content, _POLICY, canonical
     content = _Content()
     home = Path(audit["scope"]["codex_home"])
     content.deny([Path.home() / path for path in _POLICY["known_sensitive_paths"]] + [home / "auth.json"])
+    git_storage = [Path(row["path"]) for row in audit.get("frontiers", [])
+                   if row.get("kind") == "git_administration"]
     texts = {}
 
     def source(row):
@@ -182,8 +184,9 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
             raise ValueError("Evidence is outside readable audited sources or has a stale hash")
         if path not in texts:
             try:
-                real = Path(path).resolve()
-                if real.name == "SKILL.md" or ".git" in real.parts:
+                real = canonical(Path(path))
+                if (real.name == "SKILL.md" or ".git" in real.parts
+                        or any(real.is_relative_to(root) for root in git_storage)):
                     raise ValueError("Evidence resolves to an excluded source")
                 data = content.read(Path(path))
                 if hashlib.sha256(data).hexdigest() != digest:

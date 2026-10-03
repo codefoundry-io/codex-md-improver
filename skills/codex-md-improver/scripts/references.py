@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import stat
 from urllib.parse import unquote
-from discovery import _Content, _POLICY
+from discovery import _Content, _POLICY, canonical
 
 
 class InvalidOutputLocation(ValueError):
@@ -152,7 +152,7 @@ def _lex(text, path, kind=None):
         destination = next(_inline_destinations(wrapped), None)
         if destination is None or destination[:2] != (0, len(wrapped)):
             continue
-        definitions[match[1].casefold()] = wrapped[destination[2]:destination[3]]
+        definitions.setdefault(match[1].casefold(), wrapped[destination[2]:destination[3]])
         occupied.append(match.span())
 
     def add(start, end, target, kind, classification=None):
@@ -406,6 +406,7 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
         key = state_key(chain, path)
         try:
             info = path.stat()
+            real = canonical(path)
         except FileNotFoundError:
             return terminal(chain, path, "missing_target")
         except OSError:
@@ -414,7 +415,7 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             directories.add(key)
         if check_output(path, info, direct):
             return None
-        identity, real = _identity(info), path.resolve()
+        identity = _identity(info)
         if identity in sensitive_ids or real in sensitive_paths:
             return terminal(chain, path, "excluded_sensitive", info, identity)
         if ".git" in path.parts or ".git" in real.parts or any(real.is_relative_to(p) for p in git_storage):

@@ -99,7 +99,10 @@ def _candidate_records(graph, scenarios, content, selected):
             path = Path(alias)
             kind = document_kind(path, alias in loaded)
             try:
-                text = content.read(path).decode("utf-8")
+                data = content.read(path)
+                if hashlib.sha256(data).hexdigest() != node["sha256"]:
+                    raise OSError("file changed during scan")
+                text = data.decode("utf-8")
             except (OSError, UnicodeError) as error:
                 failure = "changed_during_read" if "changed during" in str(error) else "blocked_frontier"
                 graph["partial"], graph["text_read_complete"] = True, False

@@ -44,7 +44,9 @@ instruction chains; `--cwd` explicitly narrows a scenario. Optional `--settings`
 and `--resolutions` accept established scenario inputs. Observed files plus defaults
 do not attest a live session. Unknown trust and inaccessible branches stay visible.
 
-The scan writes `audit.json`, `audit.md`, complete `routes.jsonl` and `manifest.json`.
+The scan writes `audit.json`, `audit.md`, `routes.jsonl` and `manifest.json`.
+The route stream is complete unless `--max-routes` truncates it; `route_limit_reached`
+and `audit.md` disclose that truncation.
 Original bytes, loader-charged bytes and linked reading volume are distinct metrics.
 Shared physical text is counted uniquely while all route identities are retained.
 Directory subtotals count reachable graph text, not filesystem directory size.
