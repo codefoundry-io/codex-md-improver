@@ -197,7 +197,7 @@ def _git_pointer(path, content):
     if text is None or not text.startswith("gitdir:"):
         return None
     target = text[7:].strip(" \t\r\n\v\f")
-    return Path(os.path.abspath(path.parent / target)) if target else None
+    return path.parent / target if target else None
 
 
 def _git_fallback(cwd, content):
@@ -237,7 +237,13 @@ def _git_fallback(cwd, content):
         if (registration.name != ".git" or canonical(registration.parent) != canonical(repo)
                 or canonical(resolved / commonlink) != common):
             return None, None
-        main = gitdir.parent.parent.parent
+        main = resolved.parent.parent.parent
+        original_main = Path(os.path.abspath(gitdir)).parent.parent.parent
+        try:
+            if canonical(original_main) == main:
+                main = original_main
+        except (OSError, RuntimeError):
+            pass  # An unavailable lexical decoy cannot replace the validated root.
         main_entry = main / ".git"
         main_storage = main_entry if main_entry.is_dir() else _git_pointer(main_entry, content)
         if main_storage is None or canonical(main_storage) != common:
@@ -560,12 +566,17 @@ def _inventory(request, content, excluded_paths=()):
                 if not marker.is_symlink():
                     storage.add(target)
                     return
+            elif marker.is_symlink():
+                invalid_markers.add(marker)
+                frontiers.append({"path": str(marker), "kind": "blocked", "error": "invalid_git_pointer"})
+                return
             elif marker.is_file():
                 pointer = _git_pointer(marker, content)
                 if pointer is not None and pointer.is_dir():
                     target = canonical(pointer)
             if target is not None:
                 if (canonical(marker.parent).is_relative_to(target)
+                        or (request.cwd is not None and canonical(request.cwd).is_relative_to(target))
                         or any(canonical(root).is_relative_to(target) for root in roots)):
                     invalid_markers.add(marker)
                     frontiers.append({"path": str(marker), "kind": "blocked", "error": "invalid_git_pointer"})

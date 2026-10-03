@@ -281,3 +281,20 @@ Independent scoped review is clean; the current14-file candidate is built.
 README discloses the remaining inferred Git-storage boundary. The corrected
 commit still needs exact-head native CI and a complete fresh four-leg review.
 No final merge, tag/Release or actual owner installation has occurred.
+
+Commit `ec2696e` passed native CI run `37142961333`, all five jobs. macOS each
+ran321 methods with one Linux-only skip; Ubuntu each ran321 with seven native-alias
+skips. R11 was BLOCKED with all four complete: Astra and Claude requested fixes,
+Pro reported required source/test coverage uninspected, and Flash approved.
+The [R11 report](../reviews/2026-10-04-formal-code-r11.md) records filesystem-aware
+Git-pointer resolution, explicit-cwd retention and non-directory Git-alias
+corrections. A scoped review caught an intermediate original-main-trust-alias
+regression after the first GREEN; another dedicated RED preceded its correction.
+Final fresh exact GREEN passed21 focused/342 full methods plus validator, one
+Linux-only skip, all seven native alias checks executed. All68 fingerprints/status
+were preserved and exact cleanup confirmed. Scoped re-review is clean; the current
+14-file candidate is built. Pro's valid negative is retained; a denied forbidden
+shell search is not native-file-access failure or a transport-retry justification.
+The next full round clarifies navigation while retaining complete scope and all
+four configured legs. The corrected commit still needs native CI and fresh review.
+No final merge, tag/Release or actual owner installation has occurred.
