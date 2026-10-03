@@ -453,6 +453,16 @@ dedicated verification passes 182 tests plus the validator, with a separate
 documentation-driven rescan and two bounded decision checks. No new objective,
 generic parser framework or owner-gate change is introduced.
 
+Code R4 correction size: production +114/-28 lines, net +86, giving 2,277 Python
+lines across the same seven files; estimated novel core remains approximately
+850–1,150 lines. New regressions add 337 lines across four files; review/status
+records are separate and shipped skill instructions are unchanged. Growth closes
+known-sensitive metadata, nonregular configuration and reference parsing/inventory
+contracts, including independently reproduced delimiter/context regressions.
+Final local dedicated verification passes 199 tests plus the validator. The
+known Minor repeated graph-build work is explicitly deferred; route enumeration
+limits do not promise bounded graph construction. No new objective is added.
+
 ## 8. Decisions reserved for the owner or execution preflight
 
 | Question | Proposed starting point | Boundary |

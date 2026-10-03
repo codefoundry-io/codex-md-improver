@@ -176,3 +176,16 @@ their predeclared expectations. The final scoped source rereview is clean.
 The corrected candidate is built; its next source commit still requires exact-head
 native CI and a new complete four-leg code round. No merge, tag/Release or actual
 owner installation has occurred.
+
+Commit `979eda8` passed native CI run `37123465081`: four 182-test native jobs
+and the Python 3.10 rejection guard. R4 completed all four legs and was BLOCKED;
+Opus and Astra requested fixes, Pro and Flash approved. Pro's initial vendor-error
+attempt was retained and its official FAILED_TO_RUN classification permitted a
+same-basis retry. The [R4 report](../reviews/2026-10-03-formal-code-r4.md) records
+all six distinct claims, four bounded runtime corrections, the deferred Minor
+graph-build cost and the Unicode-filename counterevidence to suffix stripping.
+Separately reproduced delimiter, URL-punctuation and context-masking follow-ups
+passed final dedicated GREEN: 17 focused / 199 full tests and the validator.
+The final scoped rereview is clean. A current 14-file candidate is built; the
+corrected commit still needs its own native CI and a fresh complete code round.
+No merge, tag/Release or actual owner installation has occurred.

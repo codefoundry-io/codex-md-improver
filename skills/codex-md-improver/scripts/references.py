@@ -34,7 +34,9 @@ def _identity(info):
 
 def _classification(line):
     # Link labels/targets and quoted path names are data, not prose directives.
-    line = re.sub(r"\[[^\]]*\](?:\([^)]*\)|\[[^\]]*\])", "", line)
+    for start, end, _, _ in reversed(list(_inline_destinations(line))):
+        line = line[:start] + " " + line[end:]
+    line = re.sub(r"\[[^\]]*\]\[[^\]]*\]", "", line)
     line = re.sub(chr(96) + r"[^" + chr(96) + r"]*" + chr(96), "", line)
     line = re.sub(r"https?://\S+", "", line)
     example = re.search(r"\b(?:example|sample)\b|\be\.g\.(?=\W|$)", line, re.I)
@@ -49,6 +51,76 @@ def _classification(line):
     if reading:
         return "read_dependency"
     return "uncertain"
+
+
+def _inline_destinations(text):
+    """Keep balanced destinations and complete optional titles in one span."""
+    consumed_until = 0
+    for match in re.finditer(r"\[[^\]]*\]\(", text):
+        if match.start() < consumed_until:
+            continue
+        cursor = match.end()
+        while cursor < len(text) and text[cursor].isspace():
+            cursor += 1
+        start = cursor
+        if cursor < len(text) and text[cursor] == "<":
+            start += 1
+            end = text.find(">", start)
+            if end < 0 or "\n" in text[start:end]:
+                continue
+            cursor = end + 1
+        else:
+            depth = 0
+            while cursor < len(text):
+                char = text[cursor]
+                if char == "\\" and cursor + 1 < len(text):
+                    cursor += 2
+                    continue
+                if char.isspace() or (char == ")" and depth == 0):
+                    break
+                if char == "(":
+                    depth += 1
+                elif char == ")":
+                    depth -= 1
+                cursor += 1
+            if depth:
+                continue
+            end = cursor
+        if start == end:
+            continue
+        after_destination = cursor
+        while cursor < len(text) and text[cursor].isspace():
+            cursor += 1
+        if cursor < len(text) and text[cursor] != ")":
+            if cursor == after_destination or text[cursor] not in "\"'(":
+                continue
+            opener = text[cursor]
+            closer = ")" if opener == "(" else opener
+            cursor += 1
+            depth = 1
+            while cursor < len(text) and depth:
+                char = text[cursor]
+                if char == "\\" and cursor + 1 < len(text):
+                    cursor += 2
+                    continue
+                if char == closer:
+                    depth -= 1
+                elif opener == "(" and char == "(":
+                    depth += 1
+                cursor += 1
+            while cursor < len(text) and text[cursor].isspace():
+                cursor += 1
+        if cursor < len(text) and text[cursor] == ")":
+            consumed_until = cursor + 1
+            yield match.start(), cursor + 1, start, end
+
+
+def _bare_url_target(value):
+    value = value.rstrip(".,;!?")
+    pairs = {")": "(", "]": "[", "}": "{"}
+    while value and value[-1] in pairs and value.count(value[-1]) > value.count(pairs[value[-1]]):
+        value = value[:-1].rstrip(".,;!?")
+    return value
 
 
 def _lex(text, path, kind=None):
@@ -99,14 +171,9 @@ def _lex(text, path, kind=None):
                             "syntax": kind, "condition": line})
         occupied.append((start, end))
 
-    for match in re.finditer(r"\[[^\]]*\]\((<[^>]+>|[^)\n]+)\)", text):
-        target = match[1].strip()
-        if target.startswith("<") and target.endswith(">"):
-            target, start = target[1:-1], match.start(1) + 1
-        else:
-            target, start = re.sub(r'\s+"[^"]*"$', "", target), match.start(1)
-        add(start, start + len(target), target, "markdown", "read_dependency")
-        occupied.append(match.span())
+    for opening, closing, start, end in _inline_destinations(text):
+        add(start, end, text[start:end], "markdown", "read_dependency")
+        occupied.append((opening, closing))
     for match in re.finditer(r"\[([^\]]+)\]\[([^\]]*)\]", text):
         key = (match[2] or match[1]).casefold()
         if key in definitions:
@@ -116,6 +183,12 @@ def _lex(text, path, kind=None):
         if key in definitions:
             add(match.start(), match.end(), definitions[key], "markdown", "read_dependency")
     tick = chr(96)
+    for match in re.finditer(r"<([A-Za-z][A-Za-z0-9+.-]*:[^<>\s]+)>|"
+                             r"([A-Za-z][A-Za-z0-9+.-]*://[^<>\s`]+)", text):
+        group = 1 if match[1] is not None else 2
+        target = match[group] if group == 1 else _bare_url_target(match[group])
+        add(match.start(group), match.start(group) + len(target), target, "url", "read_dependency")
+        occupied.append(match.span())
     for match in re.finditer(tick + r"([^" + tick + r"\n]+)" + tick, text):
         target = match[1]
         if "/" in target or re.search(r"\.[A-Za-z0-9]{1,10}(?::\d+)?(?:#.*)?$", target):
@@ -178,14 +251,21 @@ def _expand_glob(path):
     return current, list({(row["path"], row["kind"]): row for row in frontiers}.values())
 
 
-def _targets(occurrence, source, chain, declared, context):
-    target = occurrence["target_text"]
+def _nonlocal_status(target):
     if target.startswith("#"):
-        return "self_reference", [], [], []
+        return "self_reference"
     filename_line = re.fullmatch(r"[^:/]+\.[^:/]+:\d+(?::\d+)?(?:#.*)?", target)
     if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", target) or (
             re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target) and not filename_line):
-        return "url", [], [], []
+        return "url"
+    return None
+
+
+def _targets(occurrence, source, chain, declared, context):
+    target = occurrence["target_text"]
+    nonlocal_status = _nonlocal_status(target)
+    if nonlocal_status:
+        return nonlocal_status, [], [], []
     target = unquote(target.partition("#")[0])
     target = re.sub(r":\d+(?::\d+)?$", "", target)
     has_glob = glob.has_magic(target)
@@ -406,7 +486,10 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
                           "scenario_project_root": chain["scenario_project_root"]}
             occurrence["id"] = hashlib.sha256(json.dumps([str(path), candidate["span"], chain["scenario_id"]]).encode()).hexdigest()[:20]
             classification = candidate["classification"]
-            if classification in NON_READ:
+            nonlocal_status = _nonlocal_status(candidate["target_text"])
+            if nonlocal_status:
+                status, targets, alternatives, frontiers = nonlocal_status, [], [], []
+            elif classification in NON_READ:
                 status, targets, alternatives, frontiers = "non_read", [], [], []
             elif classification == "uncertain":
                 status, targets, alternatives, frontiers = "unresolved", [], [], []

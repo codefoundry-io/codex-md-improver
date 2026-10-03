@@ -173,22 +173,22 @@ def _marker_root(cwd, markers):
     return cwd
 
 
-def _metadata_text(path):
+def _metadata_text(path, content):
     info = path.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_size > 65536:
         return None
-    return path.read_bytes().decode("utf-8").strip(" \t\r\n\v\f")
+    return content.read(path).decode("utf-8").strip(" \t\r\n\v\f")
 
 
-def _git_pointer(path):
-    text = _metadata_text(path)
+def _git_pointer(path, content):
+    text = _metadata_text(path, content)
     if text is None or not text.startswith("gitdir:"):
         return None
     target = text[7:].strip(" \t\r\n\v\f")
     return Path(os.path.abspath(path.parent / target)) if target else None
 
 
-def _git_fallback(cwd):
+def _git_fallback(cwd, content):
     """(validated key, inaccessible-fact reason); None/None is definite absence."""
     try:
         repo = None
@@ -210,14 +210,15 @@ def _git_fallback(cwd):
         entry = repo / ".git"
         if entry.is_dir():
             return repo, None
-        gitdir = _git_pointer(entry)
+        gitdir = _git_pointer(entry, content)
         if gitdir is None or gitdir.is_symlink() or not gitdir.is_dir():
             return None, None
         resolved = canonical(gitdir)
         if resolved.parent.name != "worktrees":
             return None, None
         common = resolved.parent.parent
-        backlink, commonlink = _metadata_text(resolved / "gitdir"), _metadata_text(resolved / "commondir")
+        backlink = _metadata_text(resolved / "gitdir", content)
+        commonlink = _metadata_text(resolved / "commondir", content)
         if not backlink or not commonlink:
             return None, None
         registration = resolved / backlink
@@ -226,7 +227,7 @@ def _git_fallback(cwd):
             return None, None
         main = gitdir.parent.parent.parent
         main_entry = main / ".git"
-        main_storage = main_entry if main_entry.is_dir() else _git_pointer(main_entry)
+        main_storage = main_entry if main_entry.is_dir() else _git_pointer(main_entry, content)
         if main_storage is None or canonical(main_storage) != common:
             return None, None
         return main, None
@@ -236,7 +237,7 @@ def _git_fallback(cwd):
         return None, type(error).__name__
 
 
-def _trust(cwd, observed, supplied, base_error):
+def _trust(cwd, observed, supplied, base_error, content):
     facts = dict(observed)
     facts.update(supplied)
     try:
@@ -246,7 +247,7 @@ def _trust(cwd, observed, supplied, base_error):
             if base_error:
                 # A hidden higher-priority cwd entry can block every fallback.
                 return "unknown", None, base_error
-        root, problem = _git_fallback(cwd)
+        root, problem = _git_fallback(cwd, content)
         if problem:
             return "unknown", None, problem
         if root:
@@ -309,7 +310,7 @@ def resolve_settings(request: ScopeRequest, cwd: Path, *, content=None) -> Loade
     apply(config, "observed_user_config")
     values.update(request.settings.get("non_project", {}))
     origins.update({key: "supplied_non_project" for key in request.settings.get("non_project", {})})
-    trust, trust_key, trust_error = _trust(cwd, observed, request.settings.get("trust", {}), trust_table_error)
+    trust, trust_key, trust_error = _trust(cwd, observed, request.settings.get("trust", {}), trust_table_error, content)
     if trust_error or trust == "unknown":
         problems.append("trust:" + (trust_error or "explicit_unknown"))
     overrides = request.settings.get("session_overrides", {})
@@ -372,6 +373,8 @@ class _Content:
         identity = (before.st_dev, before.st_ino)
         if identity in self.denied_identities or path.resolve() in self.denied_paths:
             raise PermissionError("known sensitive source excluded")
+        if not stat.S_ISREG(before.st_mode):
+            raise OSError("nonregular source excluded")
         signature = (before.st_size, before.st_mtime_ns, before.st_ctime_ns)
         if identity in self.cache:
             old_signature, data = self.cache[identity]
@@ -523,7 +526,7 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
     return record
 
 
-def _inventory(request, excluded_paths=()):
+def _inventory(request, content, excluded_paths=()):
     roots = [p.resolve() for p in request.projects]
     rows, frontiers = [], []
     storage = set()
@@ -533,7 +536,7 @@ def _inventory(request, excluded_paths=()):
             if marker.is_dir():
                 storage.add(canonical(marker))
             elif marker.is_file():
-                target = _git_pointer(marker)
+                target = _git_pointer(marker, content)
                 if target is not None and target.is_dir():
                     storage.add(canonical(target))
         except (OSError, UnicodeError) as error:
@@ -593,7 +596,7 @@ def scan(request: ScopeRequest, *, content=None, excluded_paths=()) -> dict:
     validate_request(request)
     content = _protected_content(request, content)
     global_source = _global(request, content)
-    inventory, frontiers = _inventory(request, excluded_paths)
+    inventory, frontiers = _inventory(request, content, excluded_paths)
     chains = [_chain(cwd, root, resolve_settings(request, cwd, content=content), global_source, content) for cwd, root in inventory]
     groups = []
     for group in request.settings.get("environment_groups", []):
