@@ -14,11 +14,16 @@ the current plan; do not repeat the research or adopt rejected expansions.
   identity, directory totals, probe validity and installation boundaries.
 - [x] Establish the project's own Git history and `codex/initial-skill` branch.
 - [x] Collect formal plan round 1 and apply verified in-scope corrections.
+- [x] Collect formal plan round 2 and correct scenario-dependent references,
+  107-ID traceability, bounded addition proposals and verification details.
 - [ ] Receive formal plan admission from every configured reviewer.
 - [ ] Establish the exact dedicated skill executor and observe behavioral RED.
 - [ ] Implement and test the analyzer, reports and skill in task-sized changes.
 - [ ] Complete task reviews and pre-merge review with current verification evidence.
-- [ ] Publish only after the applicable merge/release boundary is satisfied.
+- [ ] Complete the public-file/history allowlist and initial source-publication
+  decision; publish the authorized work branch for native macOS/Ubuntu CI.
+- [ ] Obtain final merge authorization, then satisfy the separately applicable
+  tag/release and actual owner-installation boundaries.
 
 The dedicated local executor and workspace registration are prepared and validated.
 The active native catalog rejects `codex-md-improver-executor` with `unknown
@@ -29,8 +34,15 @@ Round 1 is [INCOMPLETE](../reviews/2026-10-03-formal-plan-r1.md): Claude/Astra r
 fixes; both Google routes failed before review because of a nullable route enum in
 the toolkit's bound producer schema. Validated source remained unchanged during
 review. Complete raw custody was exported and its temporary managed root cleaned.
-The plan corrections are saved; a bounded toolkit repair is being regression-tested
-before a new complete round. No previous verdict transfers.
+The bounded toolkit repair passed 92 affected tests and, outside the sandbox,
+1,833 full-suite tests (4 skips). Its independent source review approved the patch.
+
+Round 2 is [BLOCKED](../reviews/2026-10-03-formal-plan-r2.md): Astra, Pro and Flash
+approved; Opus found two must-fix omissions. All four completed, including both
+previously failing Google routes; integrity passed. Export and exact temporary
+cleanup completed. The verified corrections and all 107 included criteria are now
+recorded in the plan and criteria map. The next complete round reviews those current
+bytes; no previous approval transfers.
 
 No product implementation, target migration, remote publication or owner
 installation has occurred. Private review custody stays outside this repository.
