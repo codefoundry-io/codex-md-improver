@@ -5,10 +5,12 @@ documents. It reports loader selection, byte inclusion, conditional reading cost
 candidate issues and source-bound semantic proposals. Existing SKILL.md files are
 excluded audit boundaries. It never applies target changes automatically.
 
-Requires Python 3.11+. The runtime analyzer uses the standard library. Supported
-test targets are native macOS and Ubuntu; current local evidence is macOS with
-Python 3.12. Remote CI, public source publication and a tagged release are pending.
-The presence of workflows does not establish successful CI execution.
+Requires Python 3.11+. The runtime analyzer uses the standard library. Source is
+available in this public repository. Native macOS and Ubuntu checks passed on
+Python 3.11/3.12, including 150 tests per matrix job and the Python 3.10 rejection
+guard; see the [initial implementation run](https://github.com/codefoundry-io/codex-md-improver/actions/runs/37116926970)
+and [current CI results](https://github.com/codefoundry-io/codex-md-improver/actions/workflows/ci.yml).
+A tagged release and fresh installed-skill verification are still pending.
 
 ## Use from a checkout
 
@@ -17,14 +19,25 @@ The canonical source is `skills/codex-md-improver/`. The repository discovery li
 repository and explicitly invoke `$codex-md-improver`, specifying the project(s)
 to audit. Source discovery does not prove an installed copy was loaded.
 
-For a deterministic scan, resolve the script path from this checkout and choose
-new absolute output paths outside all input trees. Follow the executing host's
-shell/permission policy; no host-specific wrapper is bundled.
+For a deterministic scan, start from the repository root. Replace `PROJECT` with
+the absolute path of the project to audit. The example uses the current Codex home
+and a fresh temporary report area; confirm that this location is host-permitted
+and outside all audit inputs. Follow the executing host's shell/permission policy.
 
 ```sh
+SKILL_DIR="$(pwd)/skills/codex-md-improver"
+PROJECT="/absolute/path/to/project"
+CODEX_HOME_PATH="${CODEX_HOME:-$HOME/.codex}"
+AUDIT_RUN="$(mktemp -d "${TMPDIR:-/tmp}/codex-md-audit.XXXXXX")"
+SCAN_OUT="$AUDIT_RUN/scan"
+
 python3 -B "$SKILL_DIR/scripts/md_improver.py" scan \
   --project "$PROJECT" --codex-home "$CODEX_HOME_PATH" --out "$SCAN_OUT"
 ```
+
+Keep the `AUDIT_RUN` value while working; temporary files
+may expire under the host's cleanup policy. Copy reports to a chosen persistent
+location if they need to survive that cleanup.
 
 Repeat `--project` for multiple roots. Default scope covers accessible nested
 instruction chains; `--cwd` explicitly narrows a scenario. Optional `--settings`
@@ -40,8 +53,14 @@ The skill reviews candidates and writes an assessment using the
 [record schema](skills/codex-md-improver/references/assessment-format.md), then runs:
 
 ```sh
+ASSESSMENT="$AUDIT_RUN/assessment.json"  # create this from the schema first
+REPORT_OUT="$AUDIT_RUN/report"
 python3 -B "$SKILL_DIR/scripts/md_improver.py" report \
   --audit "$SCAN_OUT/audit.json" --assessment "$ASSESSMENT" --out "$REPORT_OUT"
+
+BEFORE_REPORT="/absolute/path/to/prior/audit.json"
+AFTER_REPORT="$REPORT_OUT/audit.json"
+DELTA_OUT="$AUDIT_RUN/delta"
 python3 -B "$SKILL_DIR/scripts/md_improver.py" compare \
   --before "$BEFORE_REPORT" --after "$AFTER_REPORT" --out "$DELTA_OUT"
 ```

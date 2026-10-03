@@ -31,7 +31,7 @@ the current plan; do not repeat the research or adopt rejected expansions.
 - [x] Establish the exact dedicated skill executor and observe Task 1 behavioral RED.
 - [x] Implement and test the analyzer, reports and skill in task-sized changes.
 - [ ] Complete task reviews and pre-merge review with current verification evidence.
-- [ ] Complete the public-file/history allowlist and initial source-publication
+- [x] Complete the public-file/history allowlist and initial source-publication
   decision; publish the authorized work branch for native macOS/Ubuntu CI.
 - [ ] Obtain final merge authorization, then satisfy the separately applicable
   tag/release and actual owner-installation boundaries.
@@ -143,5 +143,12 @@ publication approval precede remote creation/push and native CI. Formal pre-merg
 final merge, release and actual installation remain separate pending steps. The
 owner now selects Sol/medium with no inherited history for recognition choices;
 wording plateaus use one consolidated revision followed by observed decisions.
-No target migration, remote publication, tag/release, final merge
+The owner explicitly approved publishing the complete 15-commit history through
+`db0d7a7`, including the requirements ledger and process records. The public
+`codefoundry-io/codex-md-improver` repository now contains the baseline `main` and
+the `codex/initial-skill` work branch. Native CI run `37116926970` passed on that
+exact implementation commit: macOS/Ubuntu with Python 3.11/3.12 and the Python
+3.10 rejection guard. A README follow-up defines its example variables and records
+the observed publication/CI status. Current-head CI and full pre-merge review
+follow the documentation update. No target migration, tag/release, final merge
 or owner installation has occurred. Private custody remains outside the repository.
