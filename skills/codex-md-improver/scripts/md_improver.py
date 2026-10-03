@@ -62,7 +62,7 @@ def _assessment_command(args):
                   if s.get("kind") in {"directory", "empty_directory"}]
         if any(out.resolve().is_relative_to(p.resolve()) for p in roots) and not args.allow_output_in_target:
             raise ValueError("Output inside an input requires --allow-output-in-target")
-        out.mkdir(parents=True, exist_ok=False)
+        out.mkdir(exist_ok=False)
         created = True
         _write_json(out / "manifest.json", manifest)
         if args.command == "report":
@@ -80,7 +80,7 @@ def _assessment_command(args):
         manifest.update(complete=not result.get("partial", False) and result["exit_code"] != 2, phase="finished")
         _write_json(out / "manifest.json", manifest)
         return result["exit_code"]
-    except (OSError, ValueError, TypeError, KeyError) as error:
+    except (OSError, ValueError, TypeError, KeyError, RuntimeError) as error:
         if created:
             manifest.update(complete=False, phase="error", error=str(error))
             _write_json(out / "manifest.json", manifest)
@@ -170,8 +170,10 @@ def main(argv=None):
                                Path(args.cwd) if args.cwd else None, settings)
         validate_request(request)
         resolutions = json.loads(Path(args.resolutions).read_text()) if args.resolutions else []
+        if not isinstance(resolutions, list):
+            raise ValueError("Resolutions must be a list")
         home, _ = _home(request)
-        out.mkdir(parents=True, exist_ok=False)
+        out.mkdir(exist_ok=False)
         created = True
         manifest.update(allow_output_in_target=args.allow_output_in_target, phase="inventory")
         _write_json(out / "manifest.json", manifest)
@@ -225,7 +227,7 @@ def main(argv=None):
             manifest.update(complete=False, phase="interrupted")
             _write_json(out / "manifest.json", manifest)
         return 3
-    except (OSError, ValueError, TypeError) as error:
+    except (OSError, ValueError, TypeError, RuntimeError) as error:
         if created:
             result.update(partial=True, exit_code=2, error=str(error))
             _write_json(out / "audit.json", result)

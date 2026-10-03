@@ -1,7 +1,8 @@
 # Assessment JSON schema, version 1
 
 Use `report --audit scan/audit.json --assessment assessment.json --out NEW_OUT`.
-Write the assessment outside audit inputs. All paths below are absolute audited
+NEW_OUT must be new under an existing parent. Write the assessment outside audit
+inputs. All paths below are absolute audited
 aliases, not arbitrary files. Every object rejects unknown fields unless listed
 optional. Arrays default to empty when their optional top-level field is absent.
 
@@ -12,6 +13,19 @@ the **actual audit JSON file bytes**. Optional top-level fields are `findings`,
 No narrative `summary`, `status` or scoring parser field is accepted.
 
 ## Source evidence
+
+Reading volume is recorded separately from assessment judgments. The scan's
+`reading_summary.directory_totals` and `directory_totals_by_scenario` retain byte
+subtotals. `directory_summaries` and `directory_summaries_by_scenario` use the same
+path/scenario keys and add `unique_text_bytes`, `physical_text_files`,
+`read_conditions`, `frontiers`, `frontier_counts` and `lower_bound`.
+Bytes and file counts deduplicate physical text identities. Aggregate records
+union those identities across scenarios; conditions and frontiers retain scenario
+provenance. Each condition has `scenario_id`, `source`, `occurrence_id` (null for
+directory enumeration), `condition` and `target_path` (null for unresolved edges).
+Frontier counts describe observed limited branches, not unknown files below them.
+Cycles and nonlocal URLs do not imply missing coverage. Known unreadable directories
+and excluded skill boundaries retain explicit lower-bound summaries.
 
 An evidence object requires `source`, `source_sha256`, `span: [start, end]`, and
 `text`. Hash original source bytes with SHA-256; decode UTF-8 without newline

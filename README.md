@@ -50,6 +50,14 @@ Shared physical text is counted uniquely while all route identities are retained
 Directory subtotals count reachable graph text, not filesystem directory size.
 Per-scenario subtotals preserve different relative-reference meanings; shared
 directory totals count the union of physical text across those scenarios.
+Directory summaries also include physical text-file counts, scenario-bound read
+conditions and frontier kinds/counts. Counts describe known readable text; a lower
+bound does not imply that inaccessible directories contain no additional files.
+
+Large audits have no bounded memory or runtime guarantee. The reader retains whole
+file bytes, including binaries; graph construction can revisit shared paths; route
+emission synchronously updates its receipt for every row. `--max-routes` limits
+emitted routes, not graph construction or retained file bytes.
 
 The skill reviews candidates and writes an assessment using the
 [record schema](skills/codex-md-improver/references/assessment-format.md), then runs:
@@ -67,7 +75,7 @@ python3 -B "$SKILL_DIR/scripts/md_improver.py" compare \
   --before "$BEFORE_REPORT" --after "$AFTER_REPORT" --out "$DELTA_OUT"
 ```
 
-Each output directory must be new. CLI assessment hashes bind the actual input
+Each output directory must be new and its parent must already exist. CLI assessment hashes bind the actual input
 JSON bytes. Findings retain exact source hashes/spans; rejected leads and pending
 owner questions stay visible. Scope moves, conflicts, potentially intentional
 duplicates and new destinations require owner decisions before any target edit.
@@ -92,7 +100,7 @@ These bounded choices do not replace dedicated skill behavior or owner review.
 ## Verify and build a candidate
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -p 'test_*.py' -v
+PYTHONDONTWRITEBYTECODE=1 python3 -B -m unittest discover -s tests -p 'test_*.py' -v
 python3 -B tools/package_skill.py --skill-root skills/codex-md-improver \
   --out-dir "$NEW_ABSOLUTE_PACKAGE_DIR" --version 0.1.0
 ```

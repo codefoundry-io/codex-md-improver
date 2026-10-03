@@ -18,11 +18,15 @@ class InvalidOutputLocation(ValueError):
 LIMITED = {"blocked_frontier", "missing_target", "unresolved", "excluded_sensitive",
            "excluded_git", "binary", "undecodable", "special_file", "changed_during_read"}
 NON_READ = {"informational", "example", "output"}
+CONFIG_NAMES = {".env", ".npmrc", ".pgpass", ".netrc", ".pypirc", ".gitignore",
+                ".gitattributes", ".dockerignore", ".editorconfig", ".yarnrc"}
 
 
 def document_kind(path, guidance=False):
     if guidance:
         return "agents_guidance"
+    if path.name in CONFIG_NAMES:
+        return "code_config"
     if path.suffix.lower() in {".md", ".markdown"}:
         return "markdown_reference"
     return "linked_instruction" if path.suffix.lower() in {"", ".txt", ".rst"} else "code_config"
@@ -144,9 +148,11 @@ def _lex(text, path, kind=None):
     for match in re.finditer(r"(?m)^[ \t]*\[([^\]]+)\]:[ \t]*(?:\r?\n[ \t]*)?(\S[^\n]*)", text):
         if any(match.start() < b and match.end() > a for a, b in fences):
             continue
-        destination = re.match(r"<([^>]+)>|(\S+)", match[2].strip())
-        if destination:
-            definitions[match[1].casefold()] = destination[1] or destination[2]
+        wrapped = "[definition](" + match[2].strip() + ")"
+        destination = next(_inline_destinations(wrapped), None)
+        if destination is None or destination[:2] != (0, len(wrapped)):
+            continue
+        definitions[match[1].casefold()] = wrapped[destination[2]:destination[3]]
         occupied.append(match.span())
 
     def add(start, end, target, kind, classification=None):
@@ -255,10 +261,15 @@ def _nonlocal_status(target):
     if target.startswith("#"):
         return "self_reference"
     filename_line = re.fullmatch(r"[^:/]+\.[^:/]+:\d+(?::\d+)?(?:#.*)?", target)
-    if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", target) or (
-            re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target) and not filename_line):
+    if re.fullmatch(r"[A-Za-z][A-Za-z0-9+.-]*:\S*", target) and not filename_line:
         return "url"
     return None
+
+
+def _absolute_reference(path):
+    """Anchor a reference without collapsing filesystem-significant parents."""
+    path = Path(path)
+    return path if path.is_absolute() else Path.cwd() / path
 
 
 def _targets(occurrence, source, chain, declared, context):
@@ -297,12 +308,12 @@ def _targets(occurrence, source, chain, declared, context):
                  [source.parent, Path(chain["scenario_project_root"]), Path(chain["cwd"])])
         alternatives = [folder / target for folder in bases]
         pattern = str(Path(glob.escape(str(bases[0]))) / glob_target)
-    alternatives = list(dict.fromkeys(Path(os.path.abspath(p)) for p in alternatives))
+    alternatives = list(dict.fromkeys(_absolute_reference(p) for p in alternatives))
     if len(alternatives) != 1:
         return "unresolved", [], [str(p) for p in alternatives], []
     resolved = alternatives[0]
     if has_glob:
-        matches, frontiers = _expand_glob(Path(os.path.abspath(pattern)))
+        matches, frontiers = _expand_glob(_absolute_reference(pattern))
         return ("resolved", matches, [], frontiers) if matches or frontiers else ("unresolved", [], [str(resolved)], [])
     return "resolved", [resolved], [], []
 
@@ -333,7 +344,8 @@ def _validate_resolutions(resolutions):
 
 
 def build_reference_graph(chains, declared_bases=None, resolutions=None, *, context=None):
-    declared, resolutions, context = declared_bases or {}, resolutions or [], context or {}
+    declared, context = declared_bases or {}, context or {}
+    resolutions = [] if resolutions is None else resolutions
     _validate_resolutions(resolutions)
     if not isinstance(declared, dict):
         raise ValueError("Declared bases must be an object")
@@ -341,7 +353,7 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
              "directory_totals": {}, "boundaries": [], "text_read_complete": True,
              "semantic_review_complete": False, "_chains": chains}
     content = context.get("content") or _Content()
-    texts, consumed = {}, set()
+    texts, consumed, directories = {}, set(), set()
     home = Path(context.get("user_home", Path.home()))
     codex_home = Path(context.get("codex_home", home / ".codex"))
     sensitive = [home / p for p in _POLICY["known_sensitive_paths"]] + [codex_home / "auth.json"]
@@ -386,7 +398,7 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
         return key
 
     def visit(path, chain, ancestors, direct=True):
-        path = Path(os.path.abspath(path))
+        path = _absolute_reference(path)
         key = state_key(chain, path)
         try:
             info = path.stat()
@@ -394,6 +406,8 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             return terminal(chain, path, "missing_target")
         except OSError:
             return terminal(chain, path, "blocked_frontier")
+        if stat.S_ISDIR(info.st_mode):
+            directories.add(key)
         if check_output(path, info, direct):
             return None
         identity, real = _identity(info), path.resolve()
@@ -524,24 +538,67 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
     if consumed != set(range(len(resolutions))):
         raise ValueError("A resolution did not match an accessible selected source/scenario")
 
-    def descendant_ids(key, seen):
-        if key in seen:
-            return set()
-        row = graph["states"][key]
-        ids = {row["identity"]} if row["identity"] in graph["nodes"] else set()
-        for edge in row["children"]:
-            if "state" in edge:
-                ids |= descendant_ids(edge["state"], seen | {key})
-        return ids
-    directory_ids = {}
-    graph["directory_totals_by_scenario"] = {}
+    def record(rows, value):
+        rows[json.dumps(value, sort_keys=True)] = value
+
+    def condition(source, edge, scenario):
+        target = graph["states"].get(edge.get("state"), {})
+        return {"scenario_id": scenario, "source": source["path"],
+                "occurrence_id": edge.get("occurrence_id"), "condition": edge["condition"],
+                "target_path": target.get("path")}
+
+    incoming = {}
     for key, state in graph["states"].items():
-        if state["kind"] in {"directory", "empty_directory"}:
-            ids = descendant_ids(key, set())
+        scenario = key[:-(len(state["path"]) + 1)]
+        for edge in state["children"]:
+            if "state" in edge:
+                record(incoming.setdefault(edge["state"], {}), condition(state, edge, scenario))
+
+    def descendants(key, scenario):
+        ids, conditions, frontiers, seen, pending = set(), dict(incoming.get(key, {})), {}, set(), [key]
+        while pending:
+            current = pending.pop()
+            if current in seen:
+                continue
+            seen.add(current)
+            row = graph["states"][current]
+            if row["identity"] in graph["nodes"]:
+                ids.add(row["identity"])
+            if row["kind"] in LIMITED or row["kind"] == "excluded_skill":
+                record(frontiers, {"scenario_id": scenario, "path": row["path"], "kind": row["kind"]})
+            for edge in row["children"]:
+                evidence = condition(row, edge, scenario)
+                record(conditions, evidence)
+                if "state" in edge:
+                    pending.append(edge["state"])
+                else:
+                    record(frontiers, {**evidence, "kind": edge["kind"]})
+        return ids, conditions, frontiers
+
+    def summary(ids, conditions, frontiers):
+        counts = {}
+        for row in frontiers.values():
+            counts[row["kind"]] = counts.get(row["kind"], 0) + 1
+        return {"unique_text_bytes": sum(graph["nodes"][i]["bytes"] for i in ids),
+                "physical_text_files": len(ids), "read_conditions": list(conditions.values()),
+                "frontiers": list(frontiers.values()), "frontier_counts": counts,
+                "lower_bound": bool(frontiers)}
+
+    combined = {}
+    graph["directory_totals_by_scenario"], graph["directory_summaries_by_scenario"] = {}, {}
+    for key, state in graph["states"].items():
+        if key in directories:
             scenario = key[:-(len(state["path"]) + 1)]
-            graph["directory_totals_by_scenario"].setdefault(scenario, {})[state["path"]] = sum(graph["nodes"][i]["bytes"] for i in ids)
-            directory_ids.setdefault(state["path"], set()).update(ids)
-    graph["directory_totals"] = {path: sum(graph["nodes"][i]["bytes"] for i in ids) for path, ids in directory_ids.items()}
+            ids, conditions, frontiers = descendants(key, scenario)
+            row = summary(ids, conditions, frontiers)
+            graph["directory_summaries_by_scenario"].setdefault(scenario, {})[state["path"]] = row
+            graph["directory_totals_by_scenario"].setdefault(scenario, {})[state["path"]] = row["unique_text_bytes"]
+            all_ids, all_conditions, all_frontiers = combined.setdefault(state["path"], (set(), {}, {}))
+            all_ids.update(ids)
+            all_conditions.update(conditions)
+            all_frontiers.update(frontiers)
+    graph["directory_summaries"] = {path: summary(*values) for path, values in combined.items()}
+    graph["directory_totals"] = {path: row["unique_text_bytes"] for path, row in graph["directory_summaries"].items()}
     return graph
 
 
@@ -549,10 +606,13 @@ def iter_terminal_paths(graph, chain):
     """Expand routes lazily, with route-local cycle and unique-byte accounting."""
     loaded = [s["path"] for s in [chain.get("global_source", {}), *chain["sources"]] if s.get("path")]
     initial_ids = set()
+    prefix_incomplete = False
     for source in loaded:
         row = graph["states"].get(chain["scenario_id"] + "|" + source)
         if row and row["identity"] in graph["nodes"]:
             initial_ids.add(row["identity"])
+        else:
+            prefix_incomplete = True
     initial_total = sum(graph["nodes"][i]["bytes"] for i in initial_ids)
 
     def result(node, route, conditions, total, kind, origin):
@@ -561,7 +621,8 @@ def iter_terminal_paths(graph, chain):
                 "scenario_project_root": chain["scenario_project_root"], "loader_sources": loaded,
                 "originating_instruction_file": origin, "route": route, "conditions": conditions,
                 "terminal_path": node["path"], "terminal_kind": kind, "terminal_bytes": node["bytes"],
-                "route_original_bytes": total, "lower_bound": kind in LIMITED or kind == "excluded_skill",
+                "route_original_bytes": total,
+                "lower_bound": prefix_incomplete or kind in LIMITED or kind == "excluded_skill",
                 "content_status": "read" if node["identity"] in graph["nodes"] else "metadata_only",
                 "global_original_bytes": chain.get("global_source", {}).get("original_bytes"),
                 "project_original_bytes": chain["project_original_bytes"],
@@ -594,4 +655,6 @@ def summarize_reading_paths(graph):
             "physical_text_files": len(graph["nodes"]), "occurrences": len(graph["occurrences"]),
             "text_read_complete": graph["text_read_complete"], "partial": graph["partial"],
             "semantic_review_complete": False, "directory_totals": graph["directory_totals"],
-            "directory_totals_by_scenario": graph["directory_totals_by_scenario"]}
+            "directory_totals_by_scenario": graph["directory_totals_by_scenario"],
+            "directory_summaries": graph["directory_summaries"],
+            "directory_summaries_by_scenario": graph["directory_summaries_by_scenario"]}

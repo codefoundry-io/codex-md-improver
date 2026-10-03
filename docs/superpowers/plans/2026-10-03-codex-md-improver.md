@@ -463,6 +463,18 @@ Final local dedicated verification passes 199 tests plus the validator. The
 known Minor repeated graph-build work is explicitly deferred; route enumeration
 limits do not promise bounded graph construction. No new objective is added.
 
+Code R5 correction size: production +100/-35 lines, net +65, giving 2,342 Python
+lines across the same seven files; estimated novel core remains approximately
+850–1,200 lines. New regression tests add 482 lines across four files. Shipped
+instructions/reference changes are +17/-3; repository review/status/README/AGENTS
+records are separate. These changes close existing traversal, input, output
+ownership, classification and per-directory reporting contracts. Final dedicated
+verification passes 26 focused / 225 full tests and the skill validator; two fresh
+Sol/medium choices cover the existing-parent output condition. Whole-file caching
+and per-route synchronous receipts are separately recorded performance limitations,
+alongside prior graph-build work; no new memory threshold or runtime guarantee is
+introduced. No audit population, semantic approval boundary or objective changes.
+
 ## 8. Decisions reserved for the owner or execution preflight
 
 | Question | Proposed starting point | Boundary |

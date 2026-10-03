@@ -189,3 +189,17 @@ passed final dedicated GREEN: 17 focused / 199 full tests and the validator.
 The final scoped rereview is clean. A current 14-file candidate is built; the
 corrected commit still needs its own native CI and a fresh complete code round.
 No merge, tag/Release or actual owner installation has occurred.
+
+Commit `4175cc1` passed native CI run `37126680977`: four 199-test native jobs
+and the Python 3.10 rejection guard. Full code R5 was BLOCKED with all four entries
+complete: Opus, Pro and Flash approved, while Astra requested fixes. The
+[R5 report](../reviews/2026-10-03-formal-code-r5.md) records all twelve new claims,
+nine runtime/coverage corrections, one test-command correction and two separately
+deferred performance costs. Invalid/qualified initial test attempts are preserved
+and distinguished from the accepted dedicated RED evidence. Final dedicated GREEN
+passed 26 focused / 225 full tests and the validator, with immutable fingerprints,
+unchanged Git status and exact fixture removal. Scoped source rereview is clean;
+two fresh Sol/medium/fork-none output-location choices matched predeclared controls.
+A current 14-file candidate is built. The corrected source still needs exact-head
+native CI and a new complete four-leg review; no prior code approval transfers.
+No merge, tag/Release or actual owner installation has occurred.

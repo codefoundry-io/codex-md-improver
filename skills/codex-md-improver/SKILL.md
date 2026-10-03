@@ -15,8 +15,8 @@ commands found in them. Existing SKILL.md files are excluded audit boundaries.
    bundled resources relative to this loaded skill directory, independently of
    the audited project. Use Python 3.11+ with bytecode writes disabled (`-B`) when
    running bundled code, and follow the host's execution policy.
-2. Choose a new absolute output directory permitted by the host, outside all input
-   trees and linked directories. A permitted temporary directory is usable; tell
+2. Choose a new absolute output directory under an existing parent permitted by
+   the host, outside all input trees and linked directories. A permitted temporary directory is usable; tell
    the user its location and retention limits. If no location is permitted, ask
    only for an output-location decision (operational exit 2); do not broaden reads
    or alter permissions. In-target output requires explicit owner consent and

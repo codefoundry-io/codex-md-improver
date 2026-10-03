@@ -181,15 +181,15 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
         if aliases.get(path) != digest:
             raise ValueError("Evidence is outside readable audited sources or has a stale hash")
         if path not in texts:
-            real = Path(path).resolve()
-            if real.name == "SKILL.md" or ".git" in real.parts:
-                raise ValueError("Evidence resolves to an excluded source")
             try:
+                real = Path(path).resolve()
+                if real.name == "SKILL.md" or ".git" in real.parts:
+                    raise ValueError("Evidence resolves to an excluded source")
                 data = content.read(Path(path))
                 if hashlib.sha256(data).hexdigest() != digest:
                     raise ValueError("Source changed since audit")
                 texts[path] = data.decode("utf-8")
-            except (OSError, UnicodeError) as error:
+            except (OSError, UnicodeError, RuntimeError) as error:
                 raise ValueError("Source evidence cannot be verified: " + path) from error
         return texts[path]
 
