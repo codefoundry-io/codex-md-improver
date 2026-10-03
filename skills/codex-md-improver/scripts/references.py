@@ -159,7 +159,7 @@ def _lex(text, path, kind=None):
         key = _reference_label(match[1])
         if key:
             definitions.setdefault(key, wrapped[destination[2]:destination[3]])
-        occupied.append(match.span())
+            occupied.append(match.span())
 
     def add(start, end, target, kind, classification=None):
         if any(start < b and end > a for a, b in [*occupied, *fences]):
@@ -425,7 +425,10 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
         identity = _identity(info)
         if identity in sensitive_ids or real in sensitive_paths:
             return terminal(chain, path, "excluded_sensitive", info, identity)
-        boundary = audit_source_boundary(real, git_storage)
+        try:
+            boundary = audit_source_boundary(real, git_storage, path=path, info=info)
+        except (OSError, RuntimeError):
+            return terminal(chain, path, "blocked_frontier", info, identity)
         if ".git" in path.parts or boundary == "excluded_git":
             if not direct:
                 graph["boundaries"].append({"path": str(path), "kind": "git_administration"})

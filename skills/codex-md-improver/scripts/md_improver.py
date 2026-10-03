@@ -100,7 +100,7 @@ def _candidate_records(graph, scenarios, content, selected):
             path = Path(alias)
             kind = document_kind(path, alias in loaded)
             try:
-                boundary = audit_source_boundary(canonical(path), graph.get("_git_storage", []))
+                boundary = audit_source_boundary(canonical(path), graph.get("_git_storage", []), path=path)
                 if boundary:
                     graph["partial"], graph["text_read_complete"] = True, False
                     graph["boundaries"].append({"path": alias, "kind": boundary, "phase": "candidates"})
@@ -112,7 +112,7 @@ def _candidate_records(graph, scenarios, content, selected):
                 if hashlib.sha256(data).hexdigest() != node["sha256"]:
                     raise OSError("file changed during scan")
                 text = data.decode("utf-8")
-            except (OSError, UnicodeError) as error:
+            except (OSError, UnicodeError, RuntimeError) as error:
                 failure = "changed_during_read" if "changed during" in str(error) else "blocked_frontier"
                 graph["partial"], graph["text_read_complete"] = True, False
                 graph["boundaries"].append({"path": alias, "kind": failure, "phase": "candidates"})

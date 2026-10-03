@@ -73,12 +73,15 @@ def canonical(path: Path) -> Path:
         libc.free(pointer)
 
 
-def audit_source_boundary(real: Path, git_storage=()):
-    """Classify canonical audit sources without restricting discovery metadata reads."""
+def audit_source_boundary(real: Path, git_storage=(), *, path=None, info=None):
+    """Classify canonical targets and stored entrypoints without reading content."""
     if ".git" in real.parts or any(real.is_relative_to(root) for root in git_storage):
         return "excluded_git"
-    if real.name == "SKILL.md":
-        return "excluded_skill"
+    aliases = {p for p in (real, path) if p is not None and p.name.casefold() == "skill.md"}
+    if aliases and stat.S_ISREG((info if info is not None else real.stat()).st_mode):
+        for alias in aliases:
+            if any(entry.name == "SKILL.md" and entry.samefile(real) for entry in alias.parent.iterdir()):
+                return "excluded_skill"
     return None
 
 
@@ -547,16 +550,27 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
 def _inventory(request, content, excluded_paths=()):
     roots = [p.resolve() for p in request.projects]
     rows, frontiers = [], []
-    storage = set()
+    storage, invalid_markers = set(), set()
     def identify_storage(path):
         marker = path / ".git"
         try:
+            target = None
             if marker.is_dir():
-                storage.add(canonical(marker))
+                target = canonical(marker)
+                if not marker.is_symlink():
+                    storage.add(target)
+                    return
             elif marker.is_file():
-                target = _git_pointer(marker, content)
-                if target is not None and target.is_dir():
-                    storage.add(canonical(target))
+                pointer = _git_pointer(marker, content)
+                if pointer is not None and pointer.is_dir():
+                    target = canonical(pointer)
+            if target is not None:
+                if (canonical(marker.parent).is_relative_to(target)
+                        or any(canonical(root).is_relative_to(target) for root in roots)):
+                    invalid_markers.add(marker)
+                    frontiers.append({"path": str(marker), "kind": "blocked", "error": "invalid_git_pointer"})
+                else:
+                    storage.add(target)
         except (OSError, UnicodeError) as error:
             frontiers.append({"path": str(marker), "kind": "blocked", "error": type(error).__name__})
 
@@ -577,7 +591,8 @@ def _inventory(request, content, excluded_paths=()):
             for entry in sorted(path.iterdir()):
                 try:
                     if entry.name == ".git":
-                        frontiers.append({"path": str(entry), "kind": "git_administration"})
+                        if entry not in invalid_markers:
+                            frontiers.append({"path": str(entry), "kind": "git_administration"})
                     elif entry.is_dir():
                         walk(entry, owner, ancestors | {identity})
                 except OSError as error:

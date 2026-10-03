@@ -49,8 +49,14 @@ class NormalizedLabels(unittest.TestCase):
                               '[build\u00a0rules]: decoy.md\n[build rules]: required.md\n')
         self.check_required(self.build())
 
-    def test_whitespace_only_labels_do_not_create_dependencies(self):
+    def test_whitespace_only_labels_preserve_uncertain_plain_paths(self):
         self.tree()
         self.put(self.source, 'Read [ \t ].\n\n[ \t ]: decoy.md\n')
         graph = self.build()
-        self.assertEqual(graph['occurrences'], [])
+        self.assertEqual(len(graph['occurrences']), 1)
+        row = graph['occurrences'][0]
+        self.assertEqual((row['syntax'], row['classification'], row['status'], row['targets']),
+                         ('plain', 'uncertain', 'unresolved', []))
+        self.assertEqual(row['text'], 'decoy.md')
+        self.assertTrue(graph['partial'])
+        self.assertFalse(any(str(self.decoy) in node['aliases'] for node in graph['nodes'].values()))

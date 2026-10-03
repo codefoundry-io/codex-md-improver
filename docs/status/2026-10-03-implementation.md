@@ -263,3 +263,21 @@ tests executed. All60 fingerprints/status were preserved and exact cleanup
 confirmed. Scoped independent review is clean; the current14-file candidate is
 built. The corrected source still needs native CI and full fresh four-leg review.
 No final merge, tag/Release or actual owner installation has occurred.
+
+Commit `a62304c` passed native CI run `37139934194`, all five jobs. macOS each
+ran297 methods with one Linux-only skip; Ubuntu each ran297 with five native-alias
+skips. Full code R10 was BLOCKED with all four complete: Claude requested fixes;
+Astra approved with one Minor finding; Pro and Flash approved without findings.
+The [R10 report](../reviews/2026-10-04-formal-code-r10.md) records five accepted
+defects: Git indirections erasing selected inventory, candidate RuntimeError,
+stored SKILL symlink boundaries, non-file SKILL names, and invalid definitions
+masking plain-path evidence. The earlier R9 invalid-label expectation was wrong
+and is corrected with its historical execution preserved. Two fresh exact
+dedicated RED runs preceded runtime changes, including a separately diagnosed
+Git directory-symlink variant. Final fresh GREEN passed24 focused and321 full
+methods plus validator, with one Linux-only skip and all seven native-alias checks
+executed. All65 fingerprints/status were preserved and exact cleanup confirmed.
+Independent scoped review is clean; the current14-file candidate is built.
+README discloses the remaining inferred Git-storage boundary. The corrected
+commit still needs exact-head native CI and a complete fresh four-leg review.
+No final merge, tag/Release or actual owner installation has occurred.

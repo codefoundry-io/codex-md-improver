@@ -43,6 +43,9 @@ Repeat `--project` for multiple roots. Default scope covers accessible nested
 instruction chains; `--cwd` explicitly narrows a scenario. Optional `--settings`
 and `--resolutions` accept established scenario inputs. Observed files plus defaults
 do not attest a live session. Unknown trust and inaccessible branches stay visible.
+Git storage is inferred from local directory and pointer metadata, without full
+repository validation. Indirections that encompass their own project directory
+or another selected project are rejected and reported as partial coverage.
 
 The scan writes `audit.json`, `audit.md`, `routes.jsonl` and `manifest.json`.
 The route stream is complete unless `--max-routes` truncates it; `route_limit_reached`

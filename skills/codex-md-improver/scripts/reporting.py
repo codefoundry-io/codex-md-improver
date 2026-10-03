@@ -198,7 +198,7 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
         if path not in texts:
             try:
                 real = canonical(Path(path))
-                if audit_source_boundary(real, git_storage):
+                if audit_source_boundary(real, git_storage, path=Path(path)):
                     raise ValueError("Evidence resolves to an excluded source")
                 data = content.read(Path(path))
                 if hashlib.sha256(data).hexdigest() != digest:
