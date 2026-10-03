@@ -125,7 +125,9 @@ Observed runtime is macOS with Python 3.12.13. CI jobs for native macOS/Ubuntu
 Task 2 reference traversal and output lifecycle are complete: final fresh dedicated
 GREEN passed focused 40/full 83 tests and the skill validator; final source
 re-review found no actionable finding. See the Task 2 implementation evidence.
-Detectors, reporting, recognition and packaging remain subsequent tasks. The
+Task 3 selected detectors are complete: final fresh dedicated GREEN passed
+focused 13/full 96 tests and the validator; scoped source re-review found no
+remaining concrete defect. Reporting, recognition and packaging remain. The
 owner now selects Sol/medium with no inherited history for recognition choices;
 wording plateaus use one consolidated revision followed by observed decisions.
 No target migration, remote publication, tag/release, final merge

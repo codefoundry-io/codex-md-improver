@@ -69,8 +69,9 @@ automatic learning insertion, or assumption that one mistake merits a rule.
 Subjective assessment uses the plan's six dimensions and original 100 total
 weight, with explicit evidence and unassessed states. No universal quality score
 or pass threshold is introduced. Requested structured before/after verdict
-aggregates retain their unresolved owner contract; unrelated pending score
-criteria do not become gates while that bounded decision is settled.
+aggregates follow the owner-adopted single PASS/FAIL/NA verdict contract, rejecting
+duplicate IDs and keeping missing verdicts unassessed. Unrelated pending score
+criteria remain unadopted and create no gates.
 
 ## Mapping
 
@@ -176,7 +177,7 @@ criteria do not become gates while that bounded decision is settled.
 | L-AA6 | `candidates`: body-language heuristic in `lint_candidates.py` | Candidate spans/audience uncertainty/language limits | D-lint: positive/Korean-audience exception; S-owner: verdict |
 | L-REPORT | `proposals`: candidate output and CLI receipt | Full JSON locations, summarized Markdown, exit code | D-report + D-lint: line offsets, full locations, exit precedence |
 | L-SEMANTIC | `proposals`: separate heuristic and semantic classes | Finding class, provenance, assessment/unassessed state | D-report: no automatic semantic PASS; S-owner: quality judgment |
-| L-SCORE-DELTA | `proposals`: structured before/after comparison | AuditDelta findings/bytes; requested verdict aggregates pending bounded owner contract | D-report: partial/incomparable/moved evidence; S-owner: aggregate contract before aggregate implementation |
+| L-SCORE-DELTA | `proposals`: structured before/after comparison | AuditDelta findings/bytes; unique per-ID PASS/FAIL/NA, applicable counts/rates and unassessed counts | D-report: partial/incomparable/moved evidence, duplicate rejection, zero denominator and comparable explicit FAIL-to-PASS |
 | U01 | `placement`: AGENTS versus excluded SKILL boundary | Target kind, excluded_skill terminal, placement recommendation | D-reference: no skill expansion; S-owner: AGENTS conditional guidance only |
 | U02 | `recognition` + `proposals`: static versus behavior evidence | Separate detector, semantic and valid-probe evidence | D-report: evidence classes; D-recognition: validity; S-owner: recognition limits |
 | U03 | `recognition`: narrow low-cost recognition only | Case packet/control, exact resolved model/effort, isolation | D-recognition: invalidity/status fixtures; S-owner: stated limited scope |

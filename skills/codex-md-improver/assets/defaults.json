@@ -5,6 +5,12 @@
     "root_markers": [".git"]
   },
   "original_volume_warning": {"numerator": 9, "denominator": 10},
+  "detector_ids": [
+    "L-C8-BODY-DATE", "L-C8-BODY-YEAR", "L-C8-BODY-SEMVER",
+    "L-C8-BODY-TOOLVER", "L-C8-BODY-MODEL", "L-C8-BODY-RECENCY",
+    "L-C6", "L-C4-EXCUSES", "L-C4-NARRATIVE", "L-C10", "L-C9-TOC",
+    "L-C3", "L-AA1", "L-AA2", "L-AA3", "L-AA5", "L-AA6"
+  ],
   "known_sensitive_paths": [
     ".aws/credentials", ".codex/auth.json",
     ".ssh/id_rsa", ".ssh/id_dsa", ".ssh/id_ecdsa", ".ssh/id_ed25519",
