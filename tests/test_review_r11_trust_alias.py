@@ -1,4 +1,4 @@
-"""Canonical Git validation retains the original validated main trust alias."""
+"""Pinned lexical Git validation retains an eligible original main alias."""
 from pathlib import Path
 import sys
 import unittest
@@ -46,7 +46,7 @@ class OriginalMainTrustAlias(unittest.TestCase):
         self.assertEqual(settings.trust, 'untrusted')
         self.assertEqual(settings.trust_key, str(main))
 
-    def test_missing_lexical_main_does_not_hide_valid_canonical_trust_control(self):
+    def test_missing_lexical_main_does_not_substitute_canonical_trust(self):
         main = self.base / 'outer/realmain'
         admin = main / '.git/worktrees/linked'
         self.put(main / '.git/HEAD', 'ref: refs/heads/main\n')
@@ -61,5 +61,5 @@ class OriginalMainTrustAlias(unittest.TestCase):
         self.put(self.root / '.git', 'gitdir: ' + str(pointer) + '\n')
         request = ScopeRequest([self.root], self.home, self.root, {'trust': {str(main): 'trusted'}})
         settings = resolve_settings(request, self.root)
-        self.assertEqual(settings.trust, 'trusted')
-        self.assertEqual(settings.trust_key, str(main))
+        self.assertEqual(settings.trust, 'unset')
+        self.assertIsNone(settings.trust_key)

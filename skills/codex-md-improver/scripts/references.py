@@ -374,17 +374,16 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
         except OSError:
             pass
     sensitive_paths = {p.resolve() for p in sensitive}
-    owned = Path(context["output"]).resolve() if context.get("output") else None
+    owned = canonical(Path(context["output"])) if context.get("output") else None
     git_storage = [Path(p).resolve() for p in context.get("git_storage", [])]
     graph["_git_storage"] = git_storage
 
     def state_key(chain, path):
         return chain["scenario_id"] + "|" + str(path)
 
-    def check_output(path, info, direct):
+    def check_output(path, real, info, direct):
         if owned is None:
             return False
-        real = path.resolve()
         is_owned = real.is_relative_to(owned)
         if not is_owned:
             try:
@@ -420,7 +419,7 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             return terminal(chain, path, "blocked_frontier")
         if stat.S_ISDIR(info.st_mode):
             directories.add(key)
-        if check_output(path, info, direct):
+        if check_output(path, real, info, direct):
             return None
         identity = _identity(info)
         if identity in sensitive_ids or real in sensitive_paths:

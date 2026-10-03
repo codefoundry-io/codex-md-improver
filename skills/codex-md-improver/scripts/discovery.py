@@ -1,14 +1,13 @@
 """Read-only, explicitly hypothetical instruction loader and scope inventory."""
 from dataclasses import asdict, dataclass, field
-import ctypes
 import hashlib
 import json
 import os
 from pathlib import Path
 import stat
-import sys
 import tomllib
 from typing import TypedDict
+from path_identity import canonical
 
 
 @dataclass
@@ -53,24 +52,6 @@ CONFIG_FIELDS = {"project_doc_max_bytes": "limit", "project_doc_fallback_filenam
                  "project_root_markers": "root_markers"}
 _POLICY = json.loads((Path(__file__).resolve().parents[1] / "assets/defaults.json").read_text(encoding="utf-8"))
 DEFAULTS = _POLICY["loader"]
-
-
-def canonical(path: Path) -> Path:
-    """Match native Unix canonical spelling; Python preserves case aliases on macOS."""
-    if sys.platform != "darwin":
-        return path.resolve(strict=True)
-    libc = ctypes.CDLL(None, use_errno=True)
-    libc.realpath.argtypes = [ctypes.c_char_p, ctypes.c_void_p]
-    libc.realpath.restype = ctypes.c_void_p
-    libc.free.argtypes = [ctypes.c_void_p]
-    pointer = libc.realpath(os.fsencode(path), None)
-    if not pointer:
-        error = ctypes.get_errno()
-        raise OSError(error, os.strerror(error), str(path))
-    try:
-        return Path(os.fsdecode(ctypes.string_at(pointer)))
-    finally:
-        libc.free(pointer)
 
 
 def audit_source_boundary(real: Path, git_storage=(), *, path=None, info=None):
@@ -189,15 +170,23 @@ def _metadata_text(path, content):
     info = path.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_size > 65536:
         return None
-    return content.read(path).decode("utf-8").strip(" \t\r\n\v\f")
+    text = content.read(path).decode("utf-8").strip(" \t\r\n\v\f")
+    return None if "\0" in text else text
 
 
-def _git_pointer(path, content):
+def _lexical_join(base, target):
+    # The pinned Codex PathUri trust contract collapses parents before lookup.
+    return Path("/" + os.path.abspath(base / target).lstrip("/"))
+
+
+def _git_pointer(path, content, *, lexical=False):
     text = _metadata_text(path, content)
     if text is None or not text.startswith("gitdir:"):
         return None
     target = text[7:].strip(" \t\r\n\v\f")
-    return path.parent / target if target else None
+    if not target:
+        return None
+    return _lexical_join(path.parent, target) if lexical else path.parent / target
 
 
 def _git_fallback(cwd, content):
@@ -222,7 +211,7 @@ def _git_fallback(cwd, content):
         entry = repo / ".git"
         if entry.is_dir():
             return repo, None
-        gitdir = _git_pointer(entry, content)
+        gitdir = _git_pointer(entry, content, lexical=True)
         if gitdir is None or gitdir.is_symlink() or not gitdir.is_dir():
             return None, None
         resolved = canonical(gitdir)
@@ -233,19 +222,13 @@ def _git_fallback(cwd, content):
         commonlink = _metadata_text(resolved / "commondir", content)
         if not backlink or not commonlink:
             return None, None
-        registration = resolved / backlink
+        registration = _lexical_join(resolved, backlink)
         if (registration.name != ".git" or canonical(registration.parent) != canonical(repo)
-                or canonical(resolved / commonlink) != common):
+                or canonical(_lexical_join(resolved, commonlink)) != common):
             return None, None
-        main = resolved.parent.parent.parent
-        original_main = Path(os.path.abspath(gitdir)).parent.parent.parent
-        try:
-            if canonical(original_main) == main:
-                main = original_main
-        except (OSError, RuntimeError):
-            pass  # An unavailable lexical decoy cannot replace the validated root.
+        main = gitdir.parent.parent.parent
         main_entry = main / ".git"
-        main_storage = main_entry if main_entry.is_dir() else _git_pointer(main_entry, content)
+        main_storage = main_entry if main_entry.is_dir() else _git_pointer(main_entry, content, lexical=True)
         if main_storage is None or canonical(main_storage) != common:
             return None, None
         return main, None
@@ -588,7 +571,7 @@ def _inventory(request, content, excluded_paths=()):
     def walk(path, owner, ancestors):
         try:
             identity = (path.stat().st_dev, path.stat().st_ino)
-            if any(path.resolve().is_relative_to(p.resolve()) for p in excluded_paths):
+            if any(canonical(path).is_relative_to(canonical(p)) for p in excluded_paths):
                 frontiers.append({"path": str(path), "kind": "owned_output"})
                 return
             if identity in ancestors:

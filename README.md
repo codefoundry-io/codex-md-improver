@@ -47,6 +47,8 @@ Git storage is inferred from local directory and pointer metadata, without full
 repository validation. Indirections that encompass their own project directory,
 another selected project or the explicit audit cwd are rejected and reported as
 partial coverage. Non-directory `.git` symlinks are also blocked.
+Modeled trust lookup separately follows the pinned Codex path normalization.
+NUL-bearing Git metadata supplies no trust fallback.
 
 The scan writes `audit.json`, `audit.md`, `routes.jsonl` and `manifest.json`.
 The route stream is complete unless `--max-routes` truncates it; `route_limit_reached`
@@ -90,8 +92,11 @@ python3 -B "$SKILL_DIR/scripts/md_improver.py" compare \
   --before "$BEFORE_REPORT" --after "$AFTER_REPORT" --out "$DELTA_OUT"
 ```
 
-Each output directory must be new and its parent must already exist. CLI assessment hashes bind the actual input
-JSON bytes. Findings retain exact source hashes/spans; rejected leads and pending
+Each CLI output directory must be new and its parent must already exist.
+Containment checks account for filesystem aliases, including native case aliases.
+Output within an input requires `--allow-output-in-target`; files owned by the
+current run remain excluded from its audit. CLI assessment hashes bind the actual
+input JSON bytes. Findings retain exact source hashes/spans; rejected leads and pending
 owner questions stay visible. Scope moves, conflicts, potentially intentional
 duplicates and new destinations require owner decisions before any target edit.
 Temporary output is usable when host-permitted; retain needed artifacts before

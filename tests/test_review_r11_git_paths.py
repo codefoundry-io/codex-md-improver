@@ -1,4 +1,4 @@
-"""Filesystem-significant dot-dot in Git pointers preserves inventory and trust."""
+"""Filesystem Git inventory and pinned lexical trust use separate contracts."""
 import json
 from pathlib import Path
 import sys
@@ -77,15 +77,15 @@ class GitPointerPaths(unittest.TestCase):
         request = ScopeRequest([self.root], self.home, self.root, {'trust': {str(main): 'trusted'}})
         return main, resolve_settings(request, self.root)
 
-    def test_relative_symlink_parent_worktree_trust(self):
+    def test_relative_symlink_parent_worktree_does_not_supply_trust(self):
         main, settings = self.worktree('relative')
-        self.assertEqual(settings.trust, 'trusted')
-        self.assertEqual(settings.trust_key, str(main))
+        self.assertEqual(settings.trust, 'unset')
+        self.assertIsNone(settings.trust_key)
 
-    def test_absolute_symlink_parent_worktree_trust(self):
+    def test_absolute_symlink_parent_worktree_does_not_supply_trust(self):
         main, settings = self.worktree('absolute')
-        self.assertEqual(settings.trust, 'trusted')
-        self.assertEqual(settings.trust_key, str(main))
+        self.assertEqual(settings.trust, 'unset')
+        self.assertIsNone(settings.trust_key)
 
     def test_simple_relative_worktree_control(self):
         main, settings = self.worktree('simple')
@@ -124,7 +124,7 @@ class GitPointerPaths(unittest.TestCase):
         self.assertFalse(any(f == {'path': str(ordinary.parent), 'kind': 'git_administration'}
                              for f in audit['frontiers']))
 
-    def test_main_checkout_pointer_preserves_significant_parent(self):
+    def test_main_checkout_pointer_uses_pinned_lexical_parent(self):
         main = self.base / 'main'
         common = main / 'storage'
         admin = common / 'worktrees/linked'
@@ -136,5 +136,5 @@ class GitPointerPaths(unittest.TestCase):
         self.put(self.root / '.git', 'gitdir: ' + str(admin) + '\n')
         request = ScopeRequest([self.root], self.home, self.root, {'trust': {str(main): 'trusted'}})
         settings = resolve_settings(request, self.root)
-        self.assertEqual(settings.trust, 'trusted')
-        self.assertEqual(settings.trust_key, str(main))
+        self.assertEqual(settings.trust, 'unset')
+        self.assertIsNone(settings.trust_key)

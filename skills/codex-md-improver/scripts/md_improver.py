@@ -31,6 +31,7 @@ def _write_json(path, value):
 
 
 def _assessment_command(args):
+    from path_identity import canonical, canonical_missing
     from reporting import enrich_audit, compare_reports, render_audit, _report_shape
     out = None
     created = False
@@ -60,7 +61,8 @@ def _assessment_command(args):
         roots = [Path(p) for value in inputs for p in value.get("scope", {}).get("projects", [])]
         roots += [Path(s["path"]) for value in inputs for s in value.get("graph", {}).get("states", {}).values()
                   if s.get("kind") in {"directory", "empty_directory"}]
-        if any(out.resolve().is_relative_to(p.resolve()) for p in roots) and not args.allow_output_in_target:
+        output_identity = canonical(out.parent) / out.name
+        if any(output_identity.is_relative_to(canonical_missing(p)) for p in roots) and not args.allow_output_in_target:
             raise ValueError("Output inside an input requires --allow-output-in-target")
         out.mkdir(exist_ok=False)
         created = True
@@ -159,7 +161,7 @@ def main(argv=None):
     args = parser.parse_args(argv)
     if args.command != "scan":
         return _assessment_command(args)
-    from discovery import ScopeRequest, scan, validate_request, _home, _Content, _POLICY
+    from discovery import ScopeRequest, scan, validate_request, _home, _Content, _POLICY, canonical
     from references import build_reference_graph, iter_terminal_paths, summarize_reading_paths
     from reporting import render_audit
     out = None
@@ -184,7 +186,8 @@ def main(argv=None):
         out = Path(args.out)
         if not out.is_absolute() or out.exists() or out.is_symlink():
             raise ValueError("Output must be a new absolute directory")
-        inside = any(out.resolve().is_relative_to(p.resolve()) for p in projects)
+        output_identity = canonical(out.parent) / out.name
+        inside = any(output_identity.is_relative_to(canonical(p)) for p in projects)
         if inside and not args.allow_output_in_target:
             raise ValueError("Output inside an input requires --allow-output-in-target")
         if args.max_routes is not None and args.max_routes <= 0:

@@ -1,5 +1,16 @@
 # Formal code review R11 and Git-path corrections
 
+## Correction recorded in R12
+
+R11 correctly repaired filesystem-based Git inventory, but wrongly generalized
+that path interpretation to the pinned Codex trust model. Four R11 tests therefore
+used incorrect trusted/main expectations. R12 independently checked the actual
+pinned source and corrects those expectations to unset/None, while retaining
+inventory behavior. The executions below happened as recorded; passing those
+incorrect oracles did not establish trust compatibility. See the
+[R12 report](2026-10-04-formal-code-r12.md) for the new RED/GREEN and source evidence.
+
+
 Reviewed source: `ec2696e7a845d778291dacc306eaf865bb5385c0`.
 Round: `codex-md-code-20261003-r11`; digest:
 `180f0232de87c558042a7039a171c1ac2dc2866a0e004efb9034a984bde0c086`.
@@ -28,8 +39,9 @@ The exact managed root was cleaned after export. No vote transfers to new bytes.
 | Claude Minor: a `.git` symlink to an ordinary file reenters through an administration frontier and hides that file during directory traversal | Accepted. Reject non-directory `.git` symlinks without following their content as pointer metadata. Existing invalid-marker suppression prevents promotion into graph storage. |
 | Pro necessary question: runtime source and tests were not inspected | Retain the valid COMPLETE/DO NOT MERGE result. This is not FAILED_TO_RUN and received no same-basis retry. The next complete round clarifies packet navigation without changing source scope, model, effort, web authorization or permissions. |
 
-Independent source diagnosis confirmed all three runtime findings and all Git
-pointer consumers. The correction adds no comprehensive Git repository validation
+The R11 diagnosis confirmed the inventory, cwd and non-directory alias defects,
+but incorrectly generalized the pointer interpretation to trust consumers.
+The R12 correction above supersedes that consumer-scope claim. The correction adds no comprehensive Git repository validation
 or atomic filesystem guarantee. Existing metadata-inferred sibling storage remains
 within the established, disclosed boundary.
 
@@ -66,7 +78,7 @@ ran three new cases before the further correction: two alias failures and one
 passing canonical-precedence control, zero errors/skips. All67 canonical and one
 private fingerprint, status and HEAD stayed unchanged; exact cleanup was confirmed.
 
-The final implementation derives actual main from validated storage, then retains
+At the end of R11, the implementation derived actual main from validated storage, then retained
 a normalized original spelling only when its canonical identity matches that main.
 An unavailable or mismatching optional lexical candidate cannot replace the
 validated root. Main `.git` ownership verification and canonical-before-original

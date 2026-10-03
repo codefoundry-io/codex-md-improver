@@ -1,17 +1,25 @@
 """Validate and package the portable skill subtree without publishing it."""
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import re
 import zipfile
 
 
+# Load only this repository's pure helper, never code from selected skill_root.
+_IDENTITY_SPEC = importlib.util.spec_from_file_location(
+    "codex_md_path_identity", Path(__file__).resolve().parents[1]
+    / "skills/codex-md-improver/scripts/path_identity.py")
+_path_identity = importlib.util.module_from_spec(_IDENTITY_SPEC)
+_IDENTITY_SPEC.loader.exec_module(_path_identity)
+
 ALLOWLIST = sorted([
     "LICENSE", "SKILL.md", "agents/openai.yaml", "assets/criteria.json", "assets/defaults.json",
     "references/assessment-format.md", "references/recognition-probes.md", "references/review-rules.md",
     "scripts/discovery.py", "scripts/lint_candidates.py", "scripts/md_improver.py",
-    "scripts/recognition.py", "scripts/references.py", "scripts/reporting.py",
+    "scripts/path_identity.py", "scripts/recognition.py", "scripts/references.py", "scripts/reporting.py",
 ])
 ARCHIVE_ROOT = "codex-md-improver/"
 VERSION_PATTERN = re.compile(r"v?\d+\.\d+\.\d+(?:-[A-Za-z0-9.-]+)?", re.ASCII)
@@ -56,12 +64,13 @@ def verify_package(archive_path: Path, manifest: dict) -> bool:
 def build_package(skill_root: Path, out_dir: Path, version: str) -> dict:
     if not isinstance(version, str) or not VERSION_PATTERN.fullmatch(version):
         raise ValueError("Invalid package version")
-    source = Path(skill_root).resolve(strict=True)
+    source = _path_identity.canonical(Path(skill_root))
     output = Path(out_dir)
     if not source.is_dir():
         raise ValueError("Skill source must be a directory")
+    output_identity = _path_identity.canonical_missing(output)
     if (not output.is_absolute() or output.exists() or output.is_symlink()
-            or output.resolve().is_relative_to(source) or source.is_relative_to(output.resolve())):
+            or output_identity.is_relative_to(source) or source.is_relative_to(output_identity)):
         raise ValueError("Output must be a new absolute directory outside the source")
     paths = list(source.rglob("*"))
     if any(path.is_symlink() for path in paths):

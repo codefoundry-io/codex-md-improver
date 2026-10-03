@@ -298,3 +298,22 @@ shell search is not native-file-access failure or a transport-retry justificatio
 The next full round clarifies navigation while retaining complete scope and all
 four configured legs. The corrected commit still needs native CI and fresh review.
 No final merge, tag/Release or actual owner installation has occurred.
+
+Commit `b1573bf` passed native CI run `37145295767`, all five jobs. R12 was
+BLOCKED with all four complete: Astra and Claude requested fixes; Pro and Flash
+approved. The [R12 report](../reviews/2026-10-04-formal-code-r12.md) records native
+case-alias output containment, separation of pinned lexical trust from filesystem
+inventory, and NUL metadata rejection. Four R11 trust expectations were wrong;
+the R11 report now carries an explicit correction notice without erasing results.
+
+Two dedicated REDs preceded the initial fix. Intermediate focused GREEN passed,
+but a synthetic version-guard regression and an independently identified double
+POSIX-root trust mismatch required another correction. The prefix case received
+a third fresh dedicated RED. Final fresh GREEN passed34 focused/376 full methods
+plus validator, with two full-suite skips and no failures. Terminal clipping left
+one skip identity unreported; no display-recovery rerun was made. All73 canonical
+fingerprints/status/HEAD and separate packager/harness hashes stayed unchanged;
+exact fixture removal was independently confirmed. Scoped rereview is clean,
+and the current15-resource candidate is built. SKILL.md wording is unchanged.
+The corrected commit still requires exact-head CI and a new full four-leg round.
+No final merge, tag/Release or actual owner installation has occurred.
