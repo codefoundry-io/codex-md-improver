@@ -3,8 +3,10 @@
 Updated: 2026-10-03.
 
 The owner authorized formal plan review, implementation and pre-merge review.
-MIT is selected. The structured before/after verdict aggregation decision is
-pending. Existing research was completed and its accepted corrections are in
+MIT is selected. The owner adopted structured before/after verdict aggregation:
+one PASS/FAIL/NA per rule ID, duplicate rejection, applicable=PASS+FAIL,
+PASS/applicable (undefined when zero), separate NA/unassessed counts, and
+FAIL-to-PASS transitions only for comparable reports. Existing research was completed and its accepted corrections are in
 the current plan; do not repeat the research or adopt rejected expansions.
 
 ## Progress
@@ -120,6 +122,11 @@ contracts. The skill entrypoint intentionally remains a valid minimal baseline.
 
 Observed runtime is macOS with Python 3.12.13. CI jobs for native macOS/Ubuntu
 3.11/3.12 and an unsupported-Python 3.10 guard are authored, not remotely run.
-Reference traversal, detectors, reporting, recognition and packaging remain
-subsequent tasks. No target migration, remote publication, tag/release, final merge
+Task 2 reference traversal and output lifecycle are complete: final fresh dedicated
+GREEN passed focused 40/full 83 tests and the skill validator; final source
+re-review found no actionable finding. See the Task 2 implementation evidence.
+Detectors, reporting, recognition and packaging remain subsequent tasks. The
+owner now selects Sol/medium with no inherited history for recognition choices;
+wording plateaus use one consolidated revision followed by observed decisions.
+No target migration, remote publication, tag/release, final merge
 or owner installation has occurred. Private custody remains outside the repository.

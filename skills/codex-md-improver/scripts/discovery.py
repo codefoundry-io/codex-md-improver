@@ -334,6 +334,16 @@ def resolve_settings(request: ScopeRequest, cwd: Path) -> LoaderSettings:
 class _Content:
     def __init__(self):
         self.cache = {}
+        self.denied_identities = set()
+        self.denied_paths = set()
+
+    def deny(self, paths):
+        for path in paths:
+            self.denied_paths.add(path.resolve())
+            try:
+                self.denied_identities.add(tuple(self.identity(path)))
+            except OSError:
+                pass
 
     def identity(self, path):
         info = path.stat()
@@ -342,6 +352,8 @@ class _Content:
     def read(self, path):
         before = path.stat()
         identity = (before.st_dev, before.st_ino)
+        if identity in self.denied_identities or path.resolve() in self.denied_paths:
+            raise PermissionError("known sensitive source excluded")
         signature = (before.st_size, before.st_mtime_ns, before.st_ctime_ns)
         if identity in self.cache:
             old_signature, data = self.cache[identity]
@@ -486,7 +498,7 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
     return record
 
 
-def _inventory(request):
+def _inventory(request, excluded_paths=()):
     roots = [p.resolve() for p in request.projects]
     rows, frontiers = [], []
     storage = set()
@@ -505,6 +517,9 @@ def _inventory(request):
     def walk(path, owner, ancestors):
         try:
             identity = (path.stat().st_dev, path.stat().st_ino)
+            if any(path.resolve().is_relative_to(p.resolve()) for p in excluded_paths):
+                frontiers.append({"path": str(path), "kind": "owned_output"})
+                return
             if identity in ancestors:
                 frontiers.append({"path": str(path), "kind": "cycle"})
                 return
@@ -549,11 +564,11 @@ def discover_chains(request: ScopeRequest) -> list[ChainReport]:
     return scan(request)["chains"]
 
 
-def scan(request: ScopeRequest) -> dict:
+def scan(request: ScopeRequest, *, content=None, excluded_paths=()) -> dict:
     validate_request(request)
-    content = _Content()
+    content = content or _Content()
     global_source = _global(request, content)
-    inventory, frontiers = _inventory(request)
+    inventory, frontiers = _inventory(request, excluded_paths)
     chains = [_chain(cwd, root, resolve_settings(request, cwd), global_source, content) for cwd, root in inventory]
     groups = []
     for group in request.settings.get("environment_groups", []):
@@ -568,6 +583,8 @@ def scan(request: ScopeRequest) -> dict:
             cwd = Path(name)
             owner = next(root for root in request.projects if cwd.is_relative_to(root))
             member = _chain(cwd, owner, effective, global_source, content, remaining)
+            member["environment_group_id"] = group["id"]
+            member["scenario_id"] = "group:" + group["id"] + ":" + member["scenario_id"]
             members.append(member)
             size = member["project_included_bytes"]
             if size is None:
@@ -586,7 +603,8 @@ def scan(request: ScopeRequest) -> dict:
     partial |= any(member["partial"] for group in groups for member in group["members"])
     findings = any(row["warning"] or row["raw_volume_exceeds_budget"] for row in
                    [*chains, *(member for group in groups for member in group["members"])])
-    usable = global_source["state"] == "selected" or any(source["sha256"] for row in chains
+    scenarios = [*chains, *(member for group in groups for member in group["members"])]
+    usable = global_source["state"] == "selected" or any(source["sha256"] for row in scenarios
                  for source in [*row["sources"], *row["scope_sources"]])
     home, origin = _home(request)
     return {"schema_version": 1, "chains": chains, "groups": groups, "frontiers": frontiers,
