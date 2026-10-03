@@ -150,7 +150,7 @@ def _report_shape(report):
 def report_hash(report):
     """Canonical JSON hash for in-memory API calls; CLI binds actual input bytes."""
     return hashlib.sha256(json.dumps(report, ensure_ascii=False, sort_keys=True,
-                                     separators=(",", ":")).encode()).hexdigest()
+                                     separators=(",", ":")).encode("utf-8", errors="backslashreplace")).hexdigest()
 
 
 def enrich_audit(audit, assessment, *, input_sha256=None):
@@ -337,6 +337,11 @@ def render_audit(report):
             lines.append("- Loader original-volume overflow at " + str(chain.get("cwd")) + ".")
         elif chain.get("warning"):
             lines.append("- Loader original-volume warning at " + str(chain.get("cwd")) + ".")
+    for group in report.get("groups", []):
+        if group.get("raw_volume_exceeds_budget"):
+            lines.append("- Loader original-volume overflow in environment group " + str(group["id"]) + ".")
+        elif group.get("warning"):
+            lines.append("- Loader original-volume warning in environment group " + str(group["id"]) + ".")
     lines += ["", "Loader values are hypothetical; original bytes, included bytes and conditional references are separate.",
               "Directory subtotals measure unique reachable graph text, not filesystem directory size."]
     for finding in report.get("findings", []):
@@ -411,7 +416,7 @@ def compare_reports(before, after, *, before_sha256=None):
     partial = not comparable or before.get("partial", False) or after.get("partial", False)
     scenarios = [*after.get("chains", []), *(m for g in after.get("groups", []) for m in g.get("members", []))]
     remaining = {"candidate_count": len(after.get("candidates", [])),
-                 "loader_warning_count": sum(bool(c.get("warning") or c.get("raw_volume_exceeds_budget")) for c in scenarios)}
+                 "loader_warning_count": sum(bool(c.get("warning") or c.get("raw_volume_exceeds_budget")) for c in [*scenarios, *after.get("groups", [])])}
     delta["remaining_scan_findings"] = remaining if any(remaining.values()) else {}
     active = delta["unresolved"] or delta["owner_deferred"] or any(f["status"] != "rejected" for f in new) or "FAIL" in a_verdicts.values() or any(remaining.values())
     delta.update(partial=partial, exit_code=2 if 2 in (before.get("exit_code"), after.get("exit_code")) else 3 if partial else 1 if active else 0)

@@ -162,6 +162,15 @@ and trust semantics.
 
 `effective_loader_settings` accepts the three loader fields above, optional
 `trust` (the same four levels), and optional `provenance` (a JSON object).
+Group output includes `limit`, `project_original_bytes`, `warning` and
+`raw_volume_exceeds_budget`. Original volume sums ordered member occurrences,
+including repeated shared prefixes; it is not physical graph deduplication.
+Unknown member original volume makes the sum and its comparisons null. The
+90-percent warning requires a known positive limit. Included bytes remain a
+separate metric. A later member with no remaining positive-limit budget reports
+`budget_exhausted` and per-source omissions; trust/zero-limit gates keep
+`omitted_by_gate`. Group warnings remain visible in scan, report and comparison.
+
 Omitted controlling group fields remain unknown; they are not silently borrowed
 from independent scenarios. Members share the supplied group configuration and
 ordered byte budget. Do not create a group unless that runtime relationship is
@@ -213,11 +222,19 @@ source alias and hash placeholder with the actual scan binding:
 ]
 ```
 
-Unknown fields, duplicate source/span/scenario bindings, contradictory non-read
+Unknown fields, overlapping scenario coverage for the same source/span (including
+an unscoped binding combined with any scoped binding), contradictory non-read
 target/base fields, stale source/hash/span/text and unmatched decisions are
 unusable input (exit 2). A non-read decision requires semantic evidence; an output
 or example verb elsewhere on the line is not sufficient proof. Do not remove an
 edge merely to make partial coverage disappear.
+
+Finite single-level glob components are supported. An effective `**` component
+stays unresolved because recursive glob expansion is not implemented; provide an
+established concrete target or directory resolution when justified. Literal glob
+characters in a declared base or substituted path remain literal. URL schemes,
+including `file:`, are inventoried without automatic traversal; an explicit
+source-bound local target can establish a filesystem dependency.
 
 After reviewing uncertain/unresolved occurrences, write established decisions
 outside the inputs and rescan the same selected scope into a **new** permitted

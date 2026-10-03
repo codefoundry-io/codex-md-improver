@@ -53,6 +53,15 @@ directory totals count the union of physical text across those scenarios.
 Directory summaries also include physical text-file counts, scenario-bound read
 conditions and frontier kinds/counts. Counts describe known readable text; a lower
 bound does not imply that inaccessible directories contain no additional files.
+An unavailable loader prefix also makes route totals lower bounds. Directory
+summaries reflect later read-validation failures and the remaining reachable edges.
+Explicit environment groups report original-volume warnings against their shared
+budget; an exhausted later member is distinguished from trust or zero-limit gating.
+
+Recursive `**` glob components remain unresolved until a concrete source-bound
+decision is supplied. URLs, including `file:`, are inventoried without traversal.
+POSIX filename bytes that cannot be UTF-8 encoded are escaped in reports; JSON
+preserves their filesystem representation, and normal Unicode stays unchanged.
 
 Large audits have no bounded memory or runtime guarantee. The reader retains whole
 file bytes, including binaries; graph construction can revisit shared paths; route

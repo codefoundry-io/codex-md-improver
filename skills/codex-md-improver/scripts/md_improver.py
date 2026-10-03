@@ -21,7 +21,7 @@ def _write_json(path, value):
     temporary = path.with_name("." + path.name + ".tmp")
     descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     try:
-        with os.fdopen(descriptor, "w", encoding="utf-8") as stream:
+        with os.fdopen(descriptor, "w", encoding="utf-8", errors="backslashreplace") as stream:
             stream.write(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
             stream.flush()
             os.fsync(stream.fileno())
@@ -76,7 +76,7 @@ def _assessment_command(args):
                         temporary_paths=[".manifest.json.tmp", "." + name + ".json.tmp"],
                         allow_output_in_target=args.allow_output_in_target)
         _write_json(out / (name + ".json"), result)
-        (out / (name + ".md")).write_text(rendered, encoding="utf-8")
+        (out / (name + ".md")).write_text(rendered, encoding="utf-8", errors="backslashreplace")
         manifest.update(complete=not result.get("partial", False) and result["exit_code"] != 2, phase="finished")
         _write_json(out / "manifest.json", manifest)
         return result["exit_code"]
@@ -84,13 +84,13 @@ def _assessment_command(args):
         if created:
             manifest.update(complete=False, phase="error", error=str(error))
             _write_json(out / "manifest.json", manifest)
-        print("Audit input/output error: " + str(error), file=sys.stderr)
+        print(("Audit input/output error: " + str(error)).encode("utf-8", errors="backslashreplace").decode("utf-8"), file=sys.stderr)
         return 2
 
 
 def _candidate_records(graph, scenarios, content, selected):
     from lint_candidates import find_candidates
-    from references import document_kind
+    from references import document_kind, refresh_directory_summaries
     loaded = {source["path"] for c in scenarios for source in [*c.get("sources", []), *c.get("scope_sources", [])]}
     loaded |= {c["global_source"]["path"] for c in scenarios if c.get("global_source", {}).get("path")}
     result = []
@@ -111,6 +111,7 @@ def _candidate_records(graph, scenarios, content, selected):
             for candidate in find_candidates(text, path, kind, selected):
                 candidate["source_sha256"] = node["sha256"]
                 result.append(candidate)
+    refresh_directory_summaries(graph)
     return result
 
 
@@ -198,7 +199,7 @@ def main(argv=None):
         manifest["phase"] = "routes"
         _write_json(out / "manifest.json", manifest)
         capped = False
-        with (out / "routes.jsonl").open("x", encoding="utf-8") as stream:
+        with (out / "routes.jsonl").open("x", encoding="utf-8", errors="backslashreplace") as stream:
             for chain in scenarios:
                 for row in iter_terminal_paths(graph, chain):
                     if args.max_routes is not None and manifest["route_count"] >= args.max_routes:
@@ -216,7 +217,7 @@ def main(argv=None):
             result["exit_code"] = 3
         manifest.update(phase="finished", complete=not result["partial"] and result["exit_code"] != 2)
         _write_json(out / "audit.json", result)
-        (out / "audit.md").write_text(render_audit(result) + "\nComplete route stream: routes.jsonl\n", encoding="utf-8")
+        (out / "audit.md").write_text(render_audit(result) + "\nComplete route stream: routes.jsonl\n", encoding="utf-8", errors="backslashreplace")
         _write_json(out / "manifest.json", manifest)
         return result["exit_code"]
     except (KeyboardInterrupt, ScanInterrupted) as error:
@@ -233,7 +234,7 @@ def main(argv=None):
             _write_json(out / "audit.json", result)
             manifest.update(complete=False, phase="error", error=str(error))
             _write_json(out / "manifest.json", manifest)
-        print("Audit input/output error: " + str(error), file=sys.stderr)
+        print(("Audit input/output error: " + str(error)).encode("utf-8", errors="backslashreplace").decode("utf-8"), file=sys.stderr)
         return 2
     finally:
         for sig, old in handlers.items():

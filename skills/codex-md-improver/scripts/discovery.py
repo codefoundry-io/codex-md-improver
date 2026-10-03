@@ -442,6 +442,13 @@ def _selected(cwd, settings):
 _INDEPENDENT_BUDGET = object()
 
 
+def _volume_flags(original, limit):
+    ratio = _POLICY["original_volume_warning"]
+    warning = ratio["denominator"] * original >= ratio["numerator"] * limit if original is not None and limit is not None and limit > 0 else None
+    excess = original > limit if original is not None and limit is not None else None
+    return warning, excess
+
+
 def _chain(cwd, inventory_root, settings, global_source, content, remaining=_INDEPENDENT_BUDGET):
     budget = settings.limit if remaining is _INDEPENDENT_BUDGET else remaining
     root, paths, discovery_error = _selected(cwd, settings)
@@ -458,10 +465,15 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
         except OSError as error:
             record["read_error"] = type(error).__name__
         sources.append(record)
-    gate = settings.trust == "untrusted" or budget == 0
+    gate = settings.trust == "untrusted" or settings.limit == 0
+    exhausted = not gate and budget == 0
     unresolved = settings.trust == "unknown" or budget is None or discovery_error
     included, charged, outcome = 0, 0, "omitted_by_gate" if gate else "assembled"
-    if not gate and unresolved:
+    if exhausted:
+        outcome = "budget_exhausted"
+        for source in sources:
+            source["omission"] = "budget_exhausted"
+    elif not gate and unresolved:
         included = charged = None
         outcome = "unresolved"
     elif not gate:
@@ -492,10 +504,7 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
             charged += raw
             included += decoded
     original = None if discovery_error or any(s["original_bytes"] is None for s in sources) else volume
-    limit = settings.limit
-    ratio = _POLICY["original_volume_warning"]
-    warning = ratio["denominator"] * original >= ratio["numerator"] * limit if original is not None and limit is not None and limit > 0 else None
-    excess = original > limit if original is not None and limit is not None else None
+    warning, excess = _volume_flags(original, settings.limit)
     scope_sources = []
     for name in ["AGENTS.override.md", "AGENTS.md", *(settings.fallback_names or [])]:
         path = cwd / name
@@ -515,7 +524,7 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
               "sources": sources, "scope_sources": scope_sources, "global_source": global_source, "project_original_bytes": original,
               "project_included_bytes": included, "project_retained_raw_bytes": charged,
               "warning": warning, "raw_volume_exceeds_budget": excess, "loader_outcome": outcome,
-              "modeled_loader_error": None if gate or discovery_error == "unknown_discovery_settings" else discovery_error or
+              "modeled_loader_error": None if gate or exhausted or discovery_error == "unknown_discovery_settings" else discovery_error or
                   ("read_error" if outcome == "environment_read_error" else None),
               "delivery": "conditional_on_runtime_permissions", "partial": bool(discovery_error or included is None or
                   global_source["warnings"] or any(s["read_error"] for s in sources) or
@@ -623,7 +632,11 @@ def scan(request: ScopeRequest, *, content=None, excluded_paths=()) -> dict:
                 remaining = max(0, remaining - size)
         known = all(m["project_included_bytes"] is not None for m in members)
         error = any(m["modeled_loader_error"] for m in members)
+        original = sum(m["project_original_bytes"] for m in members) if all(m["project_original_bytes"] is not None for m in members) else None
+        warning, excess = _volume_flags(original, effective.limit)
         groups.append({"id": group["id"], "members": members,
+            "project_original_bytes": original, "limit": effective.limit,
+            "warning": warning, "raw_volume_exceeds_budget": excess,
             "project_included_bytes": sum(m["project_included_bytes"] for m in members) if known else None,
             "global_candidate_bytes": global_source["included_bytes"], "delivered_bytes": None,
             "delivery": "conditional_on_runtime_permissions",
@@ -632,7 +645,7 @@ def scan(request: ScopeRequest, *, content=None, excluded_paths=()) -> dict:
     partial = any(row["partial"] for row in chains) or any(f["kind"] in ("blocked", "outside_scope") for f in frontiers)
     partial |= any(member["partial"] for group in groups for member in group["members"])
     findings = any(row["warning"] or row["raw_volume_exceeds_budget"] for row in
-                   [*chains, *(member for group in groups for member in group["members"])])
+                   [*chains, *groups, *(member for group in groups for member in group["members"])])
     scenarios = [*chains, *(member for group in groups for member in group["members"])]
     usable = global_source["state"] == "selected" or any(source["sha256"] for row in scenarios
                  for source in [*row["sources"], *row["scope_sources"]])

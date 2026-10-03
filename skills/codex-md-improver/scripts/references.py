@@ -313,6 +313,8 @@ def _targets(occurrence, source, chain, declared, context):
         return "unresolved", [], [str(p) for p in alternatives], []
     resolved = alternatives[0]
     if has_glob:
+        if "**" in Path(pattern).parts:
+            return "unresolved", [], [str(resolved)], []
         matches, frontiers = _expand_glob(_absolute_reference(pattern))
         return ("resolved", matches, [], frontiers) if matches or frontiers else ("unresolved", [], [str(resolved)], [])
     return "resolved", [resolved], [], []
@@ -338,8 +340,8 @@ def _validate_resolutions(resolutions):
         if "target" in row and not isinstance(row["target"], str):
             raise ValueError("Resolution target must be a string")
         key = (row["source"], tuple(span), row.get("scenario_id"))
-        if key in seen:
-            raise ValueError("Duplicate resolution")
+        if any(key[:2] == old[:2] and (key[2] is None or old[2] is None or key[2] == old[2]) for old in seen):
+            raise ValueError("Overlapping resolution scenario coverage")
         seen.add(key)
 
 
@@ -537,6 +539,13 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
                 graph["roots"][chain["scenario_id"]].append(key)
     if consumed != set(range(len(resolutions))):
         raise ValueError("A resolution did not match an accessible selected source/scenario")
+    graph["_directory_states"] = directories
+    refresh_directory_summaries(graph)
+    return graph
+
+
+def refresh_directory_summaries(graph):
+    """Recompute from current states while preserving captured directory membership."""
 
     def record(rows, value):
         rows[json.dumps(value, sort_keys=True)] = value
@@ -587,7 +596,7 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
     combined = {}
     graph["directory_totals_by_scenario"], graph["directory_summaries_by_scenario"] = {}, {}
     for key, state in graph["states"].items():
-        if key in directories:
+        if key in graph["_directory_states"]:
             scenario = key[:-(len(state["path"]) + 1)]
             ids, conditions, frontiers = descendants(key, scenario)
             row = summary(ids, conditions, frontiers)
@@ -599,14 +608,14 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             all_frontiers.update(frontiers)
     graph["directory_summaries"] = {path: summary(*values) for path, values in combined.items()}
     graph["directory_totals"] = {path: row["unique_text_bytes"] for path, row in graph["directory_summaries"].items()}
-    return graph
 
 
 def iter_terminal_paths(graph, chain):
     """Expand routes lazily, with route-local cycle and unique-byte accounting."""
     loaded = [s["path"] for s in [chain.get("global_source", {}), *chain["sources"]] if s.get("path")]
     initial_ids = set()
-    prefix_incomplete = False
+    prefix_incomplete = (chain["project_original_bytes"] is None or
+                         chain.get("global_source", {}).get("original_bytes", 0) is None)
     for source in loaded:
         row = graph["states"].get(chain["scenario_id"] + "|" + source)
         if row and row["identity"] in graph["nodes"]:

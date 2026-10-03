@@ -203,3 +203,17 @@ two fresh Sol/medium/fork-none output-location choices matched predeclared contr
 A current 14-file candidate is built. The corrected source still needs exact-head
 native CI and a new complete four-leg review; no prior code approval transfers.
 No merge, tag/Release or actual owner installation has occurred.
+
+
+Commit `e4ec10d` passed native CI run `37129132349`: four 225-test native jobs
+and the Python 3.10 rejection guard. R6 completed all four legs with intact
+custody and was BLOCKED: Astra, Opus and Pro requested fixes; Flash approved.
+The [R6 report](../reviews/2026-10-04-formal-code-r6.md) records all nine claims,
+six bounded implementation corrections, three rebuttals, executor log-scope and
+model-capacity deviations, and the intermediate regression found and corrected.
+Final fresh dedicated GREEN passes 26 focused / 251 full tests and the validator;
+macOS skips the one native-Linux bytes-name fixture. All 51 canonical fingerprints
+and Git status were preserved, exact fixture cleanup confirmed, and scoped
+rereview was clean. The new 14-file candidate is built. The corrected source
+still needs native CI with actual Linux filename execution and a full fresh
+four-leg code review. No merge, tag/Release or actual installation is claimed.
