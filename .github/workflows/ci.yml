@@ -1,0 +1,36 @@
+name: Native checks
+on: [push, pull_request]
+permissions:
+  contents: read
+env:
+  PYTHONDONTWRITEBYTECODE: '1'
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+        python: ['3.11', '3.12']
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python3 -m unittest discover -s tests -p 'test_*.py' -v
+  unsupported-python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Reject old runtime before unsupported imports
+        shell: bash
+        run: |
+          set +e
+          output=$(python3 skills/codex-md-improver/scripts/md_improver.py 2>&1)
+          status=$?
+          set -e
+          test "$status" -eq 2
+          [[ "$output" == *"Python 3.11"* ]]

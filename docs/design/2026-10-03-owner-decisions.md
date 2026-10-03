@@ -81,7 +81,8 @@ owner-review
 - Resolve analyzer/resources from the loaded skill directory; supply the audited project separately. Default to all accessible scopes of selected projects; current-cwd-only review is explicit.
 - Resume with a formal multi-reviewer plan review, then implementation and a pre-merge review. Permit web search for all reviewers, including OpenAI Docs for Codex. Keep Opus 5.5/xhigh, Google Pro/high, Flash/high and Astra/high; configure exact IDs/routes in one JSON file. All enabled legs must approve.
 - License: **MIT**, explicitly selected by the owner.
-- The before/after structured PASS/FAIL aggregation proposal remains pending the owner's answer; do not silently adopt the legacy parser or other pending criteria.
+- The owner adopted the structured aggregation contract on 2026-10-03: one PASS/FAIL/NA verdict per rule ID per audit, reject duplicate IDs, applicable=PASS+FAIL, pass-rate=PASS/applicable (undefined at zero), separate NA and unassessed counts, and FAIL-to-PASS transitions only across comparable reports. The legacy parser and other pending criteria remain unadopted.
+- For prompt/skill wording plateaus, consolidate findings once with a fresh read-only subagent and apply a bounded revision. Then judge disputed choices through fresh Sol/medium probes with `fork_turns="none"`, without expected answers or review history in worker packets. Dedicated executor and formal approval requirements remain separate.
 
 ## Decision register
 
