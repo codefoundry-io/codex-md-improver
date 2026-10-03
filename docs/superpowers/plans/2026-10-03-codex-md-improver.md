@@ -424,6 +424,17 @@ Planning estimate after formal-review refinements: approximately 1,100–1,700 a
 
 Recommended execution: subagent-driven tasks with the leader retaining interfaces, placement decisions, and owner questions. Tasks 1–2 establish the discovery/graph contract; Tasks 3–4 may proceed independently once their inputs are fixed; Task 5 depends on the analyzer/report and dedicated executor; Task 6 follows verified integration. Source, behavior validation, review, merge, public release, and local installation remain separate completion claims.
 
+Implementation size update (local Tasks 1–6, before remote publication): 2,060
+production Python lines across seven files, approximately 800–1,000 novel core
+lines. Relative to the admitted plan's no-code baseline this is +2,060 additions,
+zero deletions, net +2,060. Separately: 2,630 test/fixture lines, 285 shipped
+instruction lines, 1,119 formatted metadata lines, 66 CI lines and 136 README/
+provenance lines, each added from zero. Growth covers the approved trust/scenario
+resolution, graph routes, strict source-bound report transport and regression
+boundaries; the metadata total includes expanded JSON formatting for 107 IDs.
+The functional outcome is unchanged. Local verification now comprises 150 tests,
+separate dedicated semantic behavior and bounded context-limited choice probes.
+
 ## 8. Decisions reserved for the owner or execution preflight
 
 | Question | Proposed starting point | Boundary |

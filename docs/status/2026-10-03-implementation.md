@@ -29,7 +29,7 @@ the current plan; do not repeat the research or adopt rejected expansions.
 - [x] Perform complete R7 plan review against the corrected basis.
 - [x] Receive formal plan admission from every configured reviewer in R7.
 - [x] Establish the exact dedicated skill executor and observe Task 1 behavioral RED.
-- [ ] Implement and test the analyzer, reports and skill in task-sized changes.
+- [x] Implement and test the analyzer, reports and skill in task-sized changes.
 - [ ] Complete task reviews and pre-merge review with current verification evidence.
 - [ ] Complete the public-file/history allowlist and initial source-publication
   decision; publish the authorized work branch for native macOS/Ubuntu CI.
@@ -134,7 +134,13 @@ hashes. See the Task 4 implementation evidence. Task 5 is complete: final dedica
 GREEN passed 13 focused / 140 full tests and the validator; a separate fresh
 semantic executor produced the report without invalid attempts or source/input
 changes. Controlled Sol/medium choices and their context limitations are recorded
-in the Task 5 evidence. Packaging and remote-dependent gates remain. The
+in the Task 5 evidence. Task 6 local packaging passed dedicated GREEN
+(10 focused / 150 full tests and validator) and independent source review.
+MIT notices, repository discovery, a deterministic candidate builder, native CI
+and portable usage/install instructions are implemented. The local candidate
+is not a release. Public ledger/history selection and exact-commit source
+publication approval precede remote creation/push and native CI. Formal pre-merge,
+final merge, release and actual installation remain separate pending steps. The
 owner now selects Sol/medium with no inherited history for recognition choices;
 wording plateaus use one consolidated revision followed by observed decisions.
 No target migration, remote publication, tag/release, final merge
