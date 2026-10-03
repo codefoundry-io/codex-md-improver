@@ -18,6 +18,11 @@ traceability; neither a group reference nor a passing coverage test proves that
 a semantic criterion was assessed or satisfied. Do not preload this full table
 or the questionnaire into the runtime prompt.
 
+The expected included-ID set comes from the checked-in owner ledger's Included
+table, independently of criteria.json. Tag each non-detector ID beside its shipped
+conditional review rule and verify those tag/group targets exist. This catches
+missing wiring, not the quality or actual execution of a semantic judgment.
+
 Paths below are relative to the installable skill subtree unless prefixed with
 `tests/`. Proposed evidence fields refer to the plan's typed records, not a new
 schema replacing them. The implementer must carry these concepts into the
@@ -73,12 +78,12 @@ criteria do not become gates while that bounded decision is settled.
 | --- | --- | --- | --- |
 | AG01 | `durable`: recurring project information | Semantic finding: relevance and reuse evidence | S-owner: ongoing utility |
 | AG02 | `placement`: global/repository/nested roles | Chains; placement proposal and scope alternatives | D-discovery: distinct regions; S-owner: placement |
-| AG03 | `placement`: select effective guidance first | Ordered selected sources and settings provenance | D-discovery: selection fixtures |
+| AG03 | `placement`: select effective guidance first | Ordered selected sources and settings provenance | D-discovery: separate global/project override, home-resolution and read-error fixtures |
 | AG04 | `placement` + `burden`: overrides, fallbacks, linked paths | Selected sources; graph edge occurrences | D-discovery: empty override/fallback; D-reference: linked expansion |
 | AG05 | `placement`: client-specific loader scenarios | LoaderSettings client/version, uncertainty | D-discovery: supplied/default scenario labels; S-owner: runtime limits |
 | AG06 | `placement`: aggregate project byte budget | Original/charged/retained raw/decoded bytes | D-discovery: budget, whitespace, multibyte fixtures |
 | AG07 | `placement`: clipping and omitted guidance | ChainReport clipping/omissions and modeled outcome | D-discovery: exhaustion and unreadable-source outcomes |
-| AG08 | `placement` + `proposals`: separate global budget and scope moves | Separate global bytes; owner decision for move | D-discovery: global independence; D-report: deferred proposal; S-owner: move |
+| AG08 | `placement` + `proposals`: separate global budget and scope moves | Original/trimmed global bytes and runtime-cache uncertainty; owner decision for move | D-discovery: global provider has no project cap, selection/errors; D-report: deferred proposal; S-owner: move |
 | AG09 | `placement`: known budget warning | Warning state, limit and provenance | D-discovery: 90% integer boundary, equality, zero/unknown limits |
 | AG10 | `burden` + `recognition`: conditional reads and recognizable triggers | Edge conditions; expected/observed selected sources | D-reference: conditions; D-recognition: case validity; S-owner: trigger utility |
 | AG11 | `wording`: useful scope/rationale without incident history | Semantic finding; rationale-retention/rewrite proposal | S-owner: needed rationale versus needless history |

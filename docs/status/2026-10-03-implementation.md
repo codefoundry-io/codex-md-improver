@@ -16,6 +16,8 @@ the current plan; do not repeat the research or adopt rejected expansions.
 - [x] Collect formal plan round 1 and apply verified in-scope corrections.
 - [x] Collect formal plan round 2 and correct scenario-dependent references,
   107-ID traceability, bounded addition proposals and verification details.
+- [x] Collect formal plan round 3 and correct global-loader selection, member-cwd
+  preservation, cross-run finding resolution and remaining interface details.
 - [ ] Receive formal plan admission from every configured reviewer.
 - [ ] Establish the exact dedicated skill executor and observe behavioral RED.
 - [ ] Implement and test the analyzer, reports and skill in task-sized changes.
@@ -43,6 +45,13 @@ previously failing Google routes; integrity passed. Export and exact temporary
 cleanup completed. The verified corrections and all 107 included criteria are now
 recorded in the plan and criteria map. The next complete round reviews those current
 bytes; no previous approval transfers.
+
+Round 3 is [BLOCKED](../reviews/2026-10-03-formal-plan-r3.md): Pro/Flash approved;
+Astra found a same-project cwd-collapse defect and Opus found missing global-loader
+semantics. Independent source research verified the latter at the pinned official
+commit. Both defects and bounded minor corrections are now incorporated. All
+writers terminated, integrity passed, and export/cleanup completed. Formal plan
+admission is still pending; another round must assess the current complete plan.
 
 No product implementation, target migration, remote publication or owner
 installation has occurred. Private review custody stays outside this repository.
