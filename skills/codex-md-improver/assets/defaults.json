@@ -1,0 +1,8 @@
+{
+  "loader": {
+    "limit": 32768,
+    "fallback_names": [],
+    "root_markers": [".git"]
+  },
+  "original_volume_warning": {"numerator": 9, "denominator": 10}
+}

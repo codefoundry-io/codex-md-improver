@@ -24,9 +24,9 @@ the current plan; do not repeat the research or adopt rejected expansions.
   semantic occurrence additions, comparison scope and remaining bounded contracts.
 - [x] Collect formal plan round 6 and record current dispositions for a new-session handoff.
 - [x] Correct R6's default observed-trust scenario contradiction and bounded minor contracts.
-- [ ] Perform the next complete plan review against the corrected basis.
-- [ ] Receive formal plan admission from every configured reviewer.
-- [ ] Establish the exact dedicated skill executor and observe behavioral RED.
+- [x] Perform complete R7 plan review against the corrected basis.
+- [x] Receive formal plan admission from every configured reviewer in R7.
+- [x] Establish the exact dedicated skill executor and observe Task 1 behavioral RED.
 - [ ] Implement and test the analyzer, reports and skill in task-sized changes.
 - [ ] Complete task reviews and pre-merge review with current verification evidence.
 - [ ] Complete the public-file/history allowlist and initial source-publication
@@ -37,9 +37,9 @@ the current plan; do not repeat the research or adopt rejected expansions.
 The resumed Desktop session accepted a capability-only fresh native spawn with
 exact `agent_type="codex-md-improver-executor"` and `fork_turns="none"`.
 The child confirmed its executor instructions and configured canonical SOT path.
-This is current role-availability evidence, not source-loading or behavior proof;
-hidden runtime identity remains unexposed. The TRIAD executor cannot substitute.
-No behavior RED/GREEN has been claimed.
+The initial capability probe alone was not source-loading or behavior proof;
+later fresh exact-role executors read the canonical source and ran Task 1 RED/GREEN.
+Hidden runtime identity remains unexposed. The TRIAD executor cannot substitute.
 The managed-workspace prerequisite covers bundled behavior from Task 1 onward,
 not only the later SKILL.md entrypoint; static preparation does not waive it.
 A separate fresh ephemeral CLI capability probe reported exact-role acceptance;
@@ -94,8 +94,32 @@ completed. The owner requested a prepared new-session handoff. The resumed
 session has corrected the observed-plus-defaults/trust-key contract, group
 delivery and executor task mapping. A bounded native macOS fixture substantiated
 the Python/native canonical-spelling difference; the plan requires conformant
-lookup evidence without mandating ctypes. R7 preparation/review and product
-implementation remain pending.
+lookup evidence without mandating ctypes. These corrections were committed at
+`16da040` before the complete R7 review.
 
-No product implementation, target migration, remote publication or owner
-installation has occurred. Private review custody stays outside this repository.
+Round 7 is [AGREED](../reviews/2026-10-03-formal-plan-r7.md): all four configured
+legs explicitly returned SAFE TO MERGE for the same plan basis, with web allowed.
+Integrity passed; no missing leg, selection deviation or open question remained.
+All actual sessions terminated; official export and exact-root cleanup completed.
+Plan admission authorizes the approved implementation sequence, not merge/release.
+
+Task 1 implementation and source review are complete. A valid callable baseline preceded the
+accepted dedicated RED (28 tests, 35 assertion failures, zero errors). Leader
+implementation then passed a separate fresh executor's focused/current regression
+suite (28 tests) and skill validator. Independent source review found seven P2
+and two minor issues; leader also verified two adjacent contract gaps. Eleven
+new focused cases produced dedicated RED (16 assertion failures, zero errors).
+The bounded fixes passed a separate fresh dedicated GREEN: focused 11/11, full
+39/39, validator valid, source/status unchanged and disposable fixture removed.
+The source re-review verified those fixes and identified four remaining uncertainty
+and partial-coverage errors. Four focused cases then passed through fresh dedicated
+RED (four assertion failures), leader fixes and separate fresh GREEN: focused 4/4,
+full 43/43 and validator valid, with unchanged source/status and exact fixture
+cleanup. Final source re-review found no further actionable issue in those
+contracts. The skill entrypoint intentionally remains a valid minimal baseline.
+
+Observed runtime is macOS with Python 3.12.13. CI jobs for native macOS/Ubuntu
+3.11/3.12 and an unsupported-Python 3.10 guard are authored, not remotely run.
+Reference traversal, detectors, reporting, recognition and packaging remain
+subsequent tasks. No target migration, remote publication, tag/release, final merge
+or owner installation has occurred. Private custody remains outside the repository.
