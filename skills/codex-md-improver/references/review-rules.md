@@ -40,7 +40,7 @@ Criteria: [AG08] [AG15] [AG16] [AG19] [AG22] [AG23] [C15] [I03] [I04] [I05] [I06
 
 ## recognition
 
-Use a controlled fresh choice experiment for a disputed reading condition, scope or next action. Predetermine expectations and a positive control; keep them and review history out of the worker packet. Request Sol/medium with no inherited history and record the literal selected model, source/packet hashes, observed answer and unavailable runtime identity. Separate a valid mismatch from invalid delivery/control failures. At a wording plateau consult skill-prompt-review, consolidate findings once and make a bounded revision, then use observed choices rather than repeated synonym reviews. Test only the changed ambiguity; retain dedicated skill RED/GREEN and formal gates. Restore needed guidance when behavior regresses. Full evaluator/probe instructions follow in Task 5.
+Use a controlled fresh choice experiment for a disputed reading condition, scope or next action. Predetermine expectations and a positive control; keep them and review history out of the worker packet. Request Sol/medium with no inherited history and record the literal selected model, source/packet hashes, observed answer and unavailable runtime identity. Separate a valid mismatch from invalid delivery/control failures. At a wording plateau consult skill-prompt-review, consolidate findings once and make a bounded revision, then use observed choices rather than repeated synonym reviews. Test only the changed ambiguity; retain dedicated skill RED/GREEN and formal gates. Restore needed guidance when behavior regresses. Use recognition-probes.md for the evaluator and isolation contract.
 
 Criteria: [AG10] [AG23] [C1] [P23] [P24] [U02] [U03] [U04]
 
@@ -49,3 +49,5 @@ Criteria: [AG10] [AG23] [C1] [P23] [P24] [U02] [U03] [U04]
 AssessmentInput schema_version 1 binds audit_sha256, optional findings/dimensions/dispositions/resolves/owner_decisions/proposals/reviewed_sources/semantic_review_complete and criterion_verdicts. The verdict subrecord has schema_version 1 and entries [{rule_id, verdict}]. Missing judgments stay unassessed. Evidence is {source, source_sha256, span:[start,end], text}, using original-byte SHA-256 and half-open Unicode-character offsets; optional scenario_id/provenance restricts context. Current source bytes must still match.
 
 CLI assessment audit_sha256 and resolves.before_report_sha256 bind the actual input JSON file bytes. Direct Python API calls default to report_hash canonical JSON; callers passing transport bytes supply input_sha256 or before_sha256 explicitly. Do not substitute canonical hashes for CLI file hashes. Each resolves record names before_finding_id, after evidence and a reason; report marks baseline validation pending, and compare checks its actual before input.
+
+Complete accepted record keys, values and decision semantics: [assessment-format.md](assessment-format.md).

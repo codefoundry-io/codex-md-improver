@@ -5,6 +5,7 @@
     "root_markers": [".git"]
   },
   "original_volume_warning": {"numerator": 9, "denominator": 10},
+  "recognition": {"model_family": "Sol", "effort": "medium", "fork_turns": "none"},
   "detector_ids": [
     "L-C8-BODY-DATE", "L-C8-BODY-YEAR", "L-C8-BODY-SEMVER",
     "L-C8-BODY-TOOLVER", "L-C8-BODY-MODEL", "L-C8-BODY-RECENCY",

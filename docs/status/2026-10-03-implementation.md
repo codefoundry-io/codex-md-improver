@@ -130,7 +130,11 @@ focused 13/full 96 tests and the validator; scoped source re-review found no
 remaining concrete defect. Task 4 reporting is complete: final dedicated GREEN
 passed 71 focused / 127 full tests and the validator; scoped source reviews
 confirmed the final corrections, and a synthetic report preserved all input
-hashes. See the Task 4 implementation evidence. Recognition and packaging remain. The
+hashes. See the Task 4 implementation evidence. Task 5 is complete: final dedicated
+GREEN passed 13 focused / 140 full tests and the validator; a separate fresh
+semantic executor produced the report without invalid attempts or source/input
+changes. Controlled Sol/medium choices and their context limitations are recorded
+in the Task 5 evidence. Packaging and remote-dependent gates remain. The
 owner now selects Sol/medium with no inherited history for recognition choices;
 wording plateaus use one consolidated revision followed by observed decisions.
 No target migration, remote publication, tag/release, final merge
