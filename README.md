@@ -7,8 +7,8 @@ excluded audit boundaries. It never applies target changes automatically.
 
 Requires Python 3.11+. The runtime analyzer uses the standard library. Source is
 available in this public repository. Native macOS and Ubuntu checks passed on
-Python 3.11/3.12, including 150 tests per matrix job and the Python 3.10 rejection
-guard; see the [initial implementation run](https://github.com/codefoundry-io/codex-md-improver/actions/runs/37116926970)
+Python 3.11/3.12, with the Python 3.10 rejection guard; see the
+[initial implementation run](https://github.com/codefoundry-io/codex-md-improver/actions/runs/37116926970)
 and [current CI results](https://github.com/codefoundry-io/codex-md-improver/actions/workflows/ci.yml).
 A tagged release and fresh installed-skill verification are still pending.
 

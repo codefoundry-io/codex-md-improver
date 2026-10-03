@@ -162,3 +162,17 @@ the validator, with unchanged fingerprints and exact fixture cleanup; scoped
 source rereview is clean. A new deterministic candidate reflects the corrected
 source. The amended commit still needs its own native CI and full new four-leg
 review. No previous code or plan approval transfers to those changed bytes.
+
+Commit `80f1d01` passed native CI run `37119993542` (four 166-test jobs and the
+Python 3.10 rejection guard). Full code R3 was BLOCKED: Opus and Astra requested
+fixes, while Pro and Flash approved; all four completed with intact bindings.
+R2 was an abandoned operator-transcription attempt with no verdict or admission.
+The [R3 report](../reviews/2026-10-03-formal-code-r3.md) records every disposition,
+the invalid initial documentation exercise, accepted RED/GREEN evidence and
+bounded follow-up corrections. Final local verification passes 15 focused / 182
+full tests and the validator. A fresh documentation-only executor successfully
+performed the settings/resolution rescan, and two Sol/medium choice checks matched
+their predeclared expectations. The final scoped source rereview is clean.
+The corrected candidate is built; its next source commit still requires exact-head
+native CI and a new complete four-leg code round. No merge, tag/Release or actual
+owner installation has occurred.

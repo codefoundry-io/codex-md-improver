@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 import re
 import stat
-from urllib.parse import unquote, urlsplit
+from urllib.parse import unquote
 from discovery import _Content, _POLICY
 
 
@@ -56,19 +56,25 @@ def _lex(text, path, kind=None):
     if (kind or document_kind(path)) == "code_config":
         return []
     occurrences, occupied, definitions, fences = [], [], {}, []
-    opening, offset = None, 0
+    opening, marker_text, offset = None, None, 0
     for line in text.splitlines(keepends=True):
-        if line.lstrip().startswith(chr(96) * 3) or line.lstrip().startswith("~~~"):
-            if opening is None:
-                opening = offset
-            else:
+        marker = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line)
+        if marker:
+            if opening is None and not (marker[1][0] == chr(96) and chr(96) in marker[2]):
+                opening, marker_text = offset, marker[1]
+            elif (opening is not None and marker[1][0] == marker_text[0]
+                  and len(marker[1]) >= len(marker_text) and not marker[2].strip()):
                 fences.append((opening, offset + len(line)))
-                opening = None
+                opening, marker_text = None, None
         offset += len(line)
     if opening is not None:
         fences.append((opening, len(text)))
-    for match in re.finditer(r"(?m)^\s*\[([^\]]+)\]:\s*(<[^>]+>|[^\n]+)", text):
-        definitions[match[1].casefold()] = match[2].strip().strip("<>")
+    for match in re.finditer(r"(?m)^[ \t]*\[([^\]]+)\]:[ \t]*(?:\r?\n[ \t]*)?(\S[^\n]*)", text):
+        if any(match.start() < b and match.end() > a for a, b in fences):
+            continue
+        destination = re.match(r"<([^>]+)>|(\S+)", match[2].strip())
+        if destination:
+            definitions[match[1].casefold()] = destination[1] or destination[2]
         occupied.append(match.span())
 
     def add(start, end, target, kind, classification=None):
@@ -78,7 +84,7 @@ def _lex(text, path, kind=None):
         line_end = text.find("\n", end)
         line = text[line_start:line_end if line_end >= 0 else len(text)].strip()
         contextual = _classification(line)
-        inferred = "uncertain" if contextual == "mixed" else contextual if contextual in NON_READ else classification or contextual
+        inferred = "uncertain" if contextual in {*NON_READ, "mixed"} else classification or contextual
         if inferred == "uncertain" and line.startswith("|"):
             column = text[line_start:start].count("|")
             for previous in reversed(text[:line_start].splitlines()):
@@ -180,8 +186,9 @@ def _targets(occurrence, source, chain, declared, context):
     if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", target) or (
             re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target) and not filename_line):
         return "url", [], [], []
-    target = unquote(urlsplit(target).path) if "#" in target else unquote(target)
+    target = unquote(target.partition("#")[0])
     target = re.sub(r":\d+(?::\d+)?$", "", target)
+    has_glob = glob.has_magic(target)
     substitutions = {"HOME": str(context.get("user_home", Path.home())),
                      "CODEX_HOME": str(context.get("codex_home", Path.home() / ".codex")),
                      "PROJECT_ROOT": chain["scenario_project_root"], "CWD": chain["cwd"]}
@@ -191,26 +198,31 @@ def _targets(occurrence, source, chain, declared, context):
         if name not in substitutions:
             unknown.append(name)
         return substitutions.get(name, match[0])
-    target = re.sub(r"\$\{(\w+)\}|\$(\w+)", expand, target)
+    variable = r"\$\{(\w+)\}|\$(\w+)"
+    glob_target = re.sub(variable, lambda match: glob.escape(expand(match)), target)
+    target = re.sub(variable, expand, target)
     if unknown or not target or "\0" in target:
         return "unresolved", [], [], []
     if target == "~" or target.startswith("~/"):
-        target = str(Path(context.get("user_home", Path.home())) / target[2:])
+        home = str(context.get("user_home", Path.home()))
+        glob_target = str(Path(glob.escape(home)) / glob_target[2:])
+        target = str(Path(home) / target[2:])
     base = occurrence.get("base") or declared.get(str(source)) or declared.get(source)
     if Path(target).is_absolute():
         alternatives = [Path(target)]
-    elif base:
-        alternatives = [_base_path(base, source, chain) / target]
-    elif occurrence["syntax"] == "markdown":
-        alternatives = [source.parent / target]
+        pattern = glob_target
     else:
-        alternatives = [source.parent / target, Path(chain["scenario_project_root"]) / target, Path(chain["cwd"]) / target]
+        bases = ([_base_path(base, source, chain)] if base else [source.parent]
+                 if occurrence["syntax"] == "markdown" else
+                 [source.parent, Path(chain["scenario_project_root"]), Path(chain["cwd"])])
+        alternatives = [folder / target for folder in bases]
+        pattern = str(Path(glob.escape(str(bases[0]))) / glob_target)
     alternatives = list(dict.fromkeys(Path(os.path.abspath(p)) for p in alternatives))
     if len(alternatives) != 1:
         return "unresolved", [], [str(p) for p in alternatives], []
     resolved = alternatives[0]
-    if glob.has_magic(str(resolved)):
-        matches, frontiers = _expand_glob(resolved)
+    if has_glob:
+        matches, frontiers = _expand_glob(Path(os.path.abspath(pattern)))
         return ("resolved", matches, [], frontiers) if matches or frontiers else ("unresolved", [], [str(resolved)], [])
     return "resolved", [resolved], [], []
 

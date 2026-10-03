@@ -98,7 +98,9 @@ class ReferenceTests(unittest.TestCase):
         self.put(self.source, "Write output to `result.md`.\nExample: `example.md`.\nRead [code](code.py).\n")
         self.put(self.root / "code.py", 'path = "secret.md"\n')
         self.put(self.root / "secret.md", "must not be reached")
-        graph = self.build()
+        self.assertTrue(self.build()["partial"])
+        graph = self.build(resolutions=[self.decision("result.md", "output"),
+                                      self.decision("example.md", "example")])
         self.assertFalse(graph["partial"])
         classes = {e["classification"] for e in graph["occurrences"]}
         self.assertTrue({"output", "example", "read_dependency"}.issubset(classes))

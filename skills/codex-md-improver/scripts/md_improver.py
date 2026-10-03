@@ -147,6 +147,12 @@ def main(argv=None):
               "inventory_complete": False, "text_read_complete": False, "semantic_review_complete": False,
               "assessment": "unassessed"}
     handlers = {}
+    interrupted = False
+    def interrupt_once(signum, frame):
+        nonlocal interrupted
+        if not interrupted:
+            interrupted = True
+            _interrupt(signum, frame)
     try:
         if not args.project:
             raise ValueError("scan requires --project")
@@ -170,9 +176,8 @@ def main(argv=None):
         manifest.update(allow_output_in_target=args.allow_output_in_target, phase="inventory")
         _write_json(out / "manifest.json", manifest)
         for sig in (signal.SIGINT, signal.SIGTERM):
-            handlers[sig] = signal.signal(sig, _interrupt)
+            handlers[sig] = signal.signal(sig, interrupt_once)
         content = _Content()
-        content.deny([Path.home() / p for p in _POLICY["known_sensitive_paths"]] + [home / "auth.json"])
         result = scan(request, content=content, excluded_paths=[out])
         manifest["phase"] = "references"
         _write_json(out / "manifest.json", manifest)
@@ -213,6 +218,7 @@ def main(argv=None):
         _write_json(out / "manifest.json", manifest)
         return result["exit_code"]
     except (KeyboardInterrupt, ScanInterrupted) as error:
+        interrupted = True
         result.update(partial=True, exit_code=3, interruption=type(error).__name__)
         if created:
             _write_json(out / "audit.json", result)

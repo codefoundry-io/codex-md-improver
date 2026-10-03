@@ -14,6 +14,7 @@ class ReferenceReviewTests(unittest.TestCase):
     chain = fixtures.ReferenceTests.chain
     build = fixtures.ReferenceTests.build
     routes = fixtures.ReferenceTests.routes
+    decision = fixtures.ReferenceTests.decision
     cli = fixtures.ReferenceTests.cli
 
     def test_alias_first_seen_as_cycle_can_expand_on_another_route(self):
@@ -54,9 +55,11 @@ class ReferenceReviewTests(unittest.TestCase):
         self.assertEqual(selected[0]["project_included_bytes"], source.stat().st_size)
         self.assertEqual(selected[0]["terminal_kind"], "missing_target")
 
-    def test_markdown_output_and_example_links_remain_non_read(self):
+    def test_markdown_output_and_example_links_need_bound_non_read_decisions(self):
         self.put(self.source, "Write [report](result.md).\nExample: [sample][sample].\n[sample]: example.md\n")
-        graph = self.build()
+        self.assertTrue(self.build()["partial"])
+        graph = self.build(resolutions=[self.decision("result.md", "output"),
+                                      self.decision("[sample][sample]", "example")])
         self.assertFalse(graph["partial"])
         self.assertEqual([e["classification"] for e in graph["occurrences"]], ["output", "example"])
         self.assertEqual({e["status"] for e in graph["occurrences"]}, {"non_read"})

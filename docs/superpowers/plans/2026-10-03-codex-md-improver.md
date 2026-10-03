@@ -443,6 +443,16 @@ Growth corrects approved reference, partial-coverage, snapshot-binding and scena
 contracts; it adds no new audit population or configuration emulator. Final local
 dedicated verification now passes 166 tests plus the skill validator.
 
+Code R3 correction size: production +58/-32 lines, net +26, giving 2,191 Python
+lines across the same seven files; estimated novel core remains approximately
+850–1,100 lines. Separately, new regressions add 388 lines across three files,
+existing tests change +10/-4, and shipped skill/reference instructions add 123
+lines. Review/status/README records are separate. Growth closes existing sensitive
+read, reference, scope, interruption and input-transport contracts. Final local
+dedicated verification passes 182 tests plus the validator, with a separate
+documentation-driven rescan and two bounded decision checks. No new objective,
+generic parser framework or owner-gate change is introduced.
+
 ## 8. Decisions reserved for the owner or execution preflight
 
 | Question | Proposed starting point | Boundary |

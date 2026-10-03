@@ -102,9 +102,9 @@ def _fields(value):
 
 
 def validate_request(request):
-    if not request.projects or any(not p.is_absolute() or not p.is_dir() for p in request.projects):
+    if not request.projects or any(not p.is_absolute() or ".." in p.parts or not p.is_dir() for p in request.projects):
         raise ValueError("Select existing absolute project directories")
-    if request.cwd and (len(request.projects) != 1 or not request.cwd.is_absolute()
+    if request.cwd and (len(request.projects) != 1 or not request.cwd.is_absolute() or ".." in request.cwd.parts
                         or not request.cwd.is_dir() or not request.cwd.is_relative_to(request.projects[0])):
         raise ValueError("--cwd requires one containing project")
     obj = request.settings
@@ -135,7 +135,7 @@ def validate_request(request):
             raise ValueError("Groups need unique IDs and ordered cwds")
         seen_ids.add(name)
         for cwd in cwds:
-            if (not isinstance(cwd, str) or not Path(cwd).is_absolute() or not Path(cwd).is_dir()
+            if (not isinstance(cwd, str) or not Path(cwd).is_absolute() or ".." in Path(cwd).parts or not Path(cwd).is_dir()
                     or not any(Path(cwd).is_relative_to(root) for root in request.projects)
                     or cwd in seen_cwds or request.cwd and Path(cwd) != request.cwd):
                 raise ValueError("Group cwd must be uniquely selected")
@@ -149,9 +149,9 @@ def validate_request(request):
             raise ValueError("Invalid group provenance")
 
 
-def _config(path):
+def _config(path, content):
     try:
-        return tomllib.loads(path.read_bytes().decode("utf-8")), None
+        return tomllib.loads(content.read(path).decode("utf-8")), None
     except FileNotFoundError:
         return {}, None
     except (OSError, UnicodeError, tomllib.TOMLDecodeError) as error:
@@ -275,9 +275,10 @@ def _fallback_names(values, ignored=None):
     return names
 
 
-def resolve_settings(request: ScopeRequest, cwd: Path) -> LoaderSettings:
+def resolve_settings(request: ScopeRequest, cwd: Path, *, content=None) -> LoaderSettings:
     home, _ = _home(request)
-    config, error = _config(home / "config.toml")
+    content = _protected_content(request, content)
+    config, error = _config(home / "config.toml", content)
     values = dict(DEFAULTS) if not error else {key: None for key in DEFAULTS}
     origins = {key: "unresolved_user_config" if error else "pinned_default" for key in DEFAULTS}
     problems = ["user_config:" + error] if error else []
@@ -319,7 +320,7 @@ def resolve_settings(request: ScopeRequest, cwd: Path) -> LoaderSettings:
     if trust in {"trusted", "unknown"}:
         for folder in reversed(_ancestors(cwd)[:_ancestors(cwd).index(root) + 1]):
             path = folder / ".codex/config.toml"
-            local, failure = _config(path)
+            local, failure = _config(path, content)
             if failure:
                 problems.append("project_config:" + failure)
                 values["limit"], values["fallback_names"] = None, None
@@ -383,6 +384,13 @@ class _Content:
             raise OSError("file changed during read")
         self.cache[identity] = signature, data
         return data
+
+
+def _protected_content(request, content=None):
+    content = content or _Content()
+    home, _ = _home(request)
+    content.deny([Path.home() / p for p in _POLICY["known_sensitive_paths"]] + [home / "auth.json"])
+    return content
 
 
 def _global(request, content):
@@ -583,10 +591,10 @@ def discover_chains(request: ScopeRequest) -> list[ChainReport]:
 
 def scan(request: ScopeRequest, *, content=None, excluded_paths=()) -> dict:
     validate_request(request)
-    content = content or _Content()
+    content = _protected_content(request, content)
     global_source = _global(request, content)
     inventory, frontiers = _inventory(request, excluded_paths)
-    chains = [_chain(cwd, root, resolve_settings(request, cwd), global_source, content) for cwd, root in inventory]
+    chains = [_chain(cwd, root, resolve_settings(request, cwd, content=content), global_source, content) for cwd, root in inventory]
     groups = []
     for group in request.settings.get("environment_groups", []):
         raw = group.get("effective_loader_settings", {})

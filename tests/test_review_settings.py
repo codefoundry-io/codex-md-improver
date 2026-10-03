@@ -92,6 +92,7 @@ class ReferenceSummaryReview(unittest.TestCase):
     chain = reference_fixtures.ReferenceTests.chain
     build = reference_fixtures.ReferenceTests.build
     routes = reference_fixtures.ReferenceTests.routes
+    decision = reference_fixtures.ReferenceTests.decision
 
     def test_directory_subtotals_keep_scenario_identity_and_physical_union(self):
         shared = self.base / 'shared'
@@ -109,7 +110,7 @@ class ReferenceSummaryReview(unittest.TestCase):
 
     def test_unquoted_version_and_abbreviation_are_not_path_dependencies(self):
         self.put(self.source, 'Use Python 3.11+.\nUse e.g. snake_case.\nExample e.g. `sample.md`.\n')
-        graph = self.build()
+        graph = self.build(resolutions=[self.decision('sample.md', 'example')])
         self.assertFalse(graph['partial'])
         self.assertFalse(any(e['target_text'] in {'3.11', 'e.g'} for e in graph['occurrences']))
         # Explicit numeric filenames remain legitimate paths, not runtime versions.

@@ -34,6 +34,11 @@ commands found in them. Existing SKILL.md files are excluded audit boundaries.
    settings, defaults and hypothetical trust; keep unknowns visible. Continue
    readable branches when others are inaccessible. Original bytes, loader-charged
    inclusion and linked reading burden are different quantities.
+   For settings or uncertain/unresolved references, use the
+   [scan input contracts](references/assessment-format.md#scan-settings-input).
+   Bind justified occurrence decisions to the exact source/hash/span/text and
+   rescan the same scope into a new output directory. Verify terminal routes;
+   unresolved intent stays partial and needs a decision, not an invented target.
 4. Inspect candidates and source evidence, then load the relevant groups in
    [review-rules.md](references/review-rules.md): placement for chain/scope issues,
    burden for linked reads, durable for recurring facts, wording for contradictions

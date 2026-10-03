@@ -93,3 +93,121 @@ Disappearance alone, shifted spans and uncovered sources are not proof of repair
 
 Direct Python API callers default to `report_hash()` canonical JSON; pass explicit
 `input_sha256`/`before_sha256` to bind file transports. Never interchange those hashes.
+
+## Scan settings input
+
+These are inputs to `scan --settings SETTINGS.json`, separate from assessment
+records. The file is a JSON object. Omit facts that are not established; supplied
+values describe the requested scenario and never attest a live session.
+
+Optional fields (unknown top-level fields are rejected):
+
+| Field | Contract |
+| --- | --- |
+| `schema_version` | Integer `1` when present |
+| `client` | Object with optional string `name` and `version`; no other fields |
+| `non_project` | Supplied non-project loader fields, applied after observed user configuration |
+| `session_overrides` | Supplied controlling loader fields, applied after project configuration |
+| `trust` | Object mapping absolute lookup paths to `trusted`, `untrusted`, `unset`, or `unknown`; supply actual facts, not desired outcomes |
+| `declared_bases` | Object mapping absolute source aliases to reference-base objects below |
+| `environment_groups` | Ordered groups with explicit effective loader settings, described below |
+
+Loader-field objects accept only `limit`, `fallback_names` and `root_markers`.
+`limit` is a nonnegative integer or null. The other two fields are ordered arrays
+of strings or null. Null means unknown. Fallback names are filtered for invalid
+filenames and duplicates. Project layers cannot set root markers.
+
+A reference-base object is exactly `{"kind":"document_dir"}`,
+`{"kind":"scenario_project_root"}`, `{"kind":"scenario_cwd"}`, or
+`{"kind":"absolute","path":"/absolute/base"}`. Relative Markdown links otherwise
+default to their source directory. Plain paths retain distinct possible bases;
+file existence alone does not decide the intended base.
+
+For an established hypothetical 40000-byte budget, `RULES.md` fallback and
+document-directory references, replace the absolute source alias in this example:
+
+```json
+{
+  "schema_version": 1,
+  "non_project": {
+    "limit": 40000,
+    "fallback_names": ["RULES.md"]
+  },
+  "declared_bases": {
+    "/absolute/project/AGENTS.md": {"kind": "document_dir"}
+  }
+}
+```
+
+Each environment group has a unique nonempty `id`, a nonempty ordered `cwds`
+array, and optional `effective_loader_settings`. Cwds are existing absolute
+directories inside selected projects; no cwd may occur in two groups. An
+explicit `--cwd` must match every grouped cwd. Selected project/cwd/group paths
+must not contain `..` components. Symlink aliases retain the existing scenario
+and trust semantics.
+
+`effective_loader_settings` accepts the three loader fields above, optional
+`trust` (the same four levels), and optional `provenance` (a JSON object).
+Omitted controlling group fields remain unknown; they are not silently borrowed
+from independent scenarios. Members share the supplied group configuration and
+ordered byte budget. Do not create a group unless that runtime relationship is
+established.
+
+## Scan occurrence resolutions
+
+`scan --resolutions RESOLUTIONS.json` takes a **JSON array**, not an assessment
+object. These decisions classify source occurrences or resolve reference bases;
+they differ from the assessment's cross-run finding `resolves` records.
+
+Each record requires:
+
+- `source`: absolute readable source alias.
+- `source_sha256`: lowercase 64-character SHA-256 of the original source bytes.
+- `span`: nonempty `[start, end]` half-open Unicode-character offsets after UTF-8
+  decoding without newline normalization.
+- `text`: the exact decoded source substring at that span.
+- `classification`: `read_dependency`, `informational`, `example`, `output`, or
+  `uncertain`.
+
+Optional fields are `base` (one reference-base object above), `target` (the target
+string), and `scenario_id` (an actual scenario containing that source). Without
+`scenario_id`, a matching alias decision applies wherever the source occurs.
+`informational`, `example` and `output` decisions cannot include `target` or
+`base`; they stay inventoried without traversal. An `uncertain` decision still
+leaves partial coverage.
+
+Prefer the exact occurrence binding from `audit.json` under `graph.occurrences`.
+Keep its `source`, `source_sha256`, `span` and `text`; add the justified decision.
+A decision can also introduce a lexer-missed occurrence with a valid source span.
+In that case `target` defaults to the span text if omitted. For existing lexer
+occurrences an omitted target preserves the extracted target.
+
+For the exact source text ``Use `guide.md` for implementation conventions.\n``
+(the final `\n` denotes a newline), the guide span is `[5, 13]`. Replace the
+source alias and hash placeholder with the actual scan binding:
+
+```json
+[
+  {
+    "source": "/absolute/project/AGENTS.md",
+    "source_sha256": "<sha256 of original source bytes>",
+    "span": [5, 13],
+    "text": "guide.md",
+    "classification": "read_dependency",
+    "base": {"kind": "document_dir"}
+  }
+]
+```
+
+Unknown fields, duplicate source/span/scenario bindings, contradictory non-read
+target/base fields, stale source/hash/span/text and unmatched decisions are
+unusable input (exit 2). A non-read decision requires semantic evidence; an output
+or example verb elsewhere on the line is not sufficient proof. Do not remove an
+edge merely to make partial coverage disappear.
+
+After reviewing uncertain/unresolved occurrences, write established decisions
+outside the inputs and rescan the same selected scope into a **new** permitted
+output directory with the settings and resolutions files. Verify terminal
+routes and remaining frontiers. Expand only the supplied reference branch;
+unresolved intent still needs an owner decision and stays partial. Report and
+assess the resulting scan using its new actual JSON-byte hash.
