@@ -18,6 +18,8 @@ the current plan; do not repeat the research or adopt rejected expansions.
   107-ID traceability, bounded addition proposals and verification details.
 - [x] Collect formal plan round 3 and correct global-loader selection, member-cwd
   preservation, cross-run finding resolution and remaining interface details.
+- [x] Collect formal plan round 4 and correct occurrence classifications, separate
+  cwd-inventory boundaries and reference frontiers, and complete output lifecycle.
 - [ ] Receive formal plan admission from every configured reviewer.
 - [ ] Establish the exact dedicated skill executor and observe behavioral RED.
 - [ ] Implement and test the analyzer, reports and skill in task-sized changes.
@@ -52,6 +54,14 @@ semantics. Independent source research verified the latter at the pinned officia
 commit. Both defects and bounded minor corrections are now incorporated. All
 writers terminated, integrity passed, and export/cleanup completed. Formal plan
 admission is still pending; another round must assess the current complete plan.
+
+Round 4 is [BLOCKED](../reviews/2026-10-03-formal-plan-r4.md): Astra/Pro/Flash
+approved with no findings; Opus requested fixes. The classification-input gap and
+bounded interface corrections are incorporated. Ignored/vendor scope pruning and
+mandatory route compression were not adopted; declared full-route output cost is
+distinct from the corrected Git-inventory ambiguity. A suggested metadata shortcut
+was narrowed using the pinned source's actual discovery-before-reading order.
+All R4 writers terminated, integrity passed, and export/cleanup completed.
 
 No product implementation, target migration, remote publication or owner
 installation has occurred. Private review custody stays outside this repository.
