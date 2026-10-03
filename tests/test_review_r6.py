@@ -5,7 +5,7 @@ import sys
 import unittest
 from unittest.mock import patch
 
-PROJECT = Path('/Users/chaniri/codex_workspace/workspace/codex-md-improver')
+PROJECT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT / 'tests'))
 sys.path.insert(0, str(PROJECT / 'skills/codex-md-improver/scripts'))
 import test_discovery as discovery_fixtures

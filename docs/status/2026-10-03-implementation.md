@@ -217,3 +217,19 @@ and Git status were preserved, exact fixture cleanup confirmed, and scoped
 rereview was clean. The new 14-file candidate is built. The corrected source
 still needs native CI with actual Linux filename execution and a full fresh
 four-leg code review. No merge, tag/Release or actual installation is claimed.
+
+
+Commit `959006d` passed native CI run `37132809537`: Ubuntu each251 passes,
+macOS each250 passes/one Linux-only skip, and the Python3.10 rejection guard.
+Full code R7 was BLOCKED with all four complete: Astra and Opus requested fixes;
+Pro and Flash approved. The [R7 report](../reviews/2026-10-04-formal-code-r7.md)
+records all three accepted findings: literal percent-path decoding, five retained
+host-specific R6 test bindings from a failed leader copy transformation, and a
+complete-stream footer on capped routes. The copy error is acknowledged; earlier
+canonical test observations remain real, while portable-binding implications are
+corrected. Fresh dedicated RED preceded the bounded runtime changes. Final fresh
+GREEN passed37 R6/R7 focused and262 full methods plus validator (one Linux-only
+skip on macOS), with53 immutable fingerprints/status and exact fixture cleanup.
+Scoped independent review is clean; the new14-file candidate is built. The
+corrected commit still needs native CI and complete fresh four-leg review. No
+final merge, tag/Release or actual owner installation has occurred.

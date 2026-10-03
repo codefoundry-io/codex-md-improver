@@ -217,7 +217,8 @@ def main(argv=None):
             result["exit_code"] = 3
         manifest.update(phase="finished", complete=not result["partial"] and result["exit_code"] != 2)
         _write_json(out / "audit.json", result)
-        (out / "audit.md").write_text(render_audit(result) + "\nComplete route stream: routes.jsonl\n", encoding="utf-8", errors="backslashreplace")
+        route_label = "Route stream" if capped else "Complete route stream"
+        (out / "audit.md").write_text(render_audit(result) + "\n" + route_label + ": routes.jsonl\n", encoding="utf-8", errors="backslashreplace")
         _write_json(out / "manifest.json", manifest)
         return result["exit_code"]
     except (KeyboardInterrupt, ScanInterrupted) as error:

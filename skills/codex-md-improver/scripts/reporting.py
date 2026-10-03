@@ -331,6 +331,8 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
 
 def render_audit(report):
     lines = ["# Instruction audit", "", "Coverage: " + ("partial" if report.get("partial") else "declared area complete") + "."]
+    if report.get("route_limit_reached"):
+        lines.append("Route stream truncated by --max-routes; coverage is partial.")
     scenarios = [*report.get("chains", []), *(m for g in report.get("groups", []) for m in g.get("members", []))]
     for chain in scenarios:
         if chain.get("raw_volume_exceeds_budget"):

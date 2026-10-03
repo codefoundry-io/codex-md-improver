@@ -204,6 +204,10 @@ Keep its `source`, `source_sha256`, `span` and `text`; add the justified decisio
 A decision can also introduce a lexer-missed occurrence with a valid source span.
 In that case `target` defaults to the span text if omitted. For existing lexer
 occurrences an omitted target preserves the extracted target.
+Original Markdown destinations percent-decode once; plain filesystem paths and
+explicitly supplied targets preserve literal percent sequences. Supplying a target
+does not change an existing Markdown occurrence's document-relative default base.
+Fragment and filename-line suffix conventions remain unchanged.
 
 For the exact source text ``Use `guide.md` for implementation conventions.\n``
 (the final `\n` denotes a newline), the guide span is `[5, 13]`. Replace the

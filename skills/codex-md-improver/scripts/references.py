@@ -272,12 +272,14 @@ def _absolute_reference(path):
     return path if path.is_absolute() else Path.cwd() / path
 
 
-def _targets(occurrence, source, chain, declared, context):
+def _targets(occurrence, source, chain, declared, context, *, explicit_target=False):
     target = occurrence["target_text"]
     nonlocal_status = _nonlocal_status(target)
     if nonlocal_status:
         return nonlocal_status, [], [], []
-    target = unquote(target.partition("#")[0])
+    target = target.partition("#")[0]
+    if occurrence["syntax"] == "markdown" and not explicit_target:
+        target = unquote(target)
     target = re.sub(r":\d+(?::\d+)?$", "", target)
     has_glob = glob.has_magic(target)
     substitutions = {"HOME": str(context.get("user_home", Path.home())),
@@ -479,6 +481,7 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
         terminal(chain, path, "leaf", info, identity)
         guidance = {s["path"] for s in [chain.get("global_source", {}), *chain["sources"], *chain.get("scope_sources", [])] if s.get("path")}
         candidates = _lex(text, path, document_kind(path, str(path) in guidance))
+        explicit_targets = set()
         for index, resolution in enumerate(resolutions):
             if resolution["source"] != str(path) or resolution.get("scenario_id", chain["scenario_id"]) != chain["scenario_id"]:
                 continue
@@ -494,6 +497,7 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             candidate["classification"] = resolution["classification"]
             if "target" in resolution:
                 candidate["target_text"] = resolution["target"]
+                explicit_targets.add(tuple(candidate["span"]))
             if "base" in resolution:
                 candidate["base"] = resolution["base"]
         for candidate in sorted(candidates, key=lambda c: c["span"]):
@@ -510,7 +514,8 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             elif classification == "uncertain":
                 status, targets, alternatives, frontiers = "unresolved", [], [], []
             else:
-                status, targets, alternatives, frontiers = _targets(candidate, path, chain, declared, context)
+                status, targets, alternatives, frontiers = _targets(candidate, path, chain, declared, context,
+                    explicit_target=tuple(candidate["span"]) in explicit_targets)
             occurrence.update(status=status, targets=[str(p) for p in targets], alternatives=alternatives)
             if frontiers:
                 occurrence["expansion_frontiers"] = frontiers
