@@ -335,3 +335,20 @@ Scoped Sol/high source review is clean. The15-resource local candidate is built.
 Current corrected bytes still require exact-head CI and a fresh complete R14
 with the same four web-enabled legs. No final merge, tag/Release or actual owner
 installation has occurred.
+
+Commit `dde8e56` passed exact native CI `37151667004`, all five jobs. Full
+R14 completed BLOCKED: Astra requested one fix; Claude approved with three Minor
+findings; Pro and Flash approved. All four had web permission. The
+[R14 report](../reviews/2026-10-04-formal-code-r14.md) records native inventory
+containment, exact optional resolution-base validation, lexical group cwd
+uniqueness and explicitly selected Git-administration boundaries.
+
+Two fresh exact RED executions established nine failed methods across15 methods,
+with six passing controls, before the bounded two-module correction. Fresh exact
+GREEN passed15 focused/417 full methods and validator (415 full passes/two platform
+skips). All80 fingerprints/status/HEAD and separate harness/packager hashes were
+preserved; exact fixture cleanup was independently confirmed. Scoped Sol/high
+review is clean. The15-resource local candidate is built. Corrected bytes still
+require exact-head native CI and a fresh complete four-leg R15. No earlier verdict
+transfers; final merge, tag/Release and actual owner installation remain pending
+separate approval boundaries.

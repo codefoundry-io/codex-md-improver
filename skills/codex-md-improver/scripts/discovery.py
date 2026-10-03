@@ -145,9 +145,9 @@ def validate_request(request):
         for cwd in cwds:
             if (not isinstance(cwd, str) or not Path(cwd).is_absolute() or ".." in Path(cwd).parts or not Path(cwd).is_dir()
                     or not any(Path(cwd).is_relative_to(root) for root in request.projects)
-                    or cwd in seen_cwds or request.cwd and Path(cwd) != request.cwd):
+                    or str(Path(cwd)) in seen_cwds or request.cwd and Path(cwd) != request.cwd):
                 raise ValueError("Group cwd must be uniquely selected")
-            seen_cwds.add(cwd)
+            seen_cwds.add(str(Path(cwd)))
         effective = group.get("effective_loader_settings", {})
         _mapping(effective, {*DEFAULTS, "trust", "provenance"}, "effective group settings")
         _fields({k: v for k, v in effective.items() if k in DEFAULTS})
@@ -554,7 +554,7 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
 
 
 def _inventory(request, content, excluded_paths=()):
-    roots = [p.resolve() for p in request.projects]
+    roots = [canonical(p) for p in request.projects]
     rows, frontiers = [], []
     storage, invalid_markers = set(), set()
     def identify_storage(path):
@@ -585,8 +585,16 @@ def _inventory(request, content, excluded_paths=()):
         except (OSError, UnicodeError) as error:
             frontiers.append({"path": str(marker), "kind": "blocked", "error": type(error).__name__})
 
+    def excluded_git(path):
+        if ".git" in path.parts or ".git" in canonical(path).parts:
+            frontiers.append({"path": str(path), "kind": "git_administration"})
+            return True
+        return False
+
     def walk(path, owner, ancestors):
         try:
+            if excluded_git(path):
+                return
             identity = (path.stat().st_dev, path.stat().st_ino)
             if any(canonical(path).is_relative_to(canonical(p)) for p in excluded_paths):
                 frontiers.append({"path": str(path), "kind": "owned_output"})
@@ -594,7 +602,7 @@ def _inventory(request, content, excluded_paths=()):
             if identity in ancestors:
                 frontiers.append({"path": str(path), "kind": "cycle"})
                 return
-            if path.is_symlink() and not any(path.resolve().is_relative_to(root) for root in roots):
+            if path.is_symlink() and not any(canonical(path).is_relative_to(root) for root in roots):
                 frontiers.append({"path": str(path), "kind": "outside_scope"})
                 return
             rows.append((path, owner))
@@ -611,9 +619,13 @@ def _inventory(request, content, excluded_paths=()):
         except OSError as error:
             frontiers.append({"path": str(path), "kind": "blocked", "error": type(error).__name__})
     if request.cwd:
-        for folder in _ancestors(request.cwd):
-            identify_storage(folder)
-        rows.append((request.cwd, request.projects[0]))
+        try:
+            if not excluded_git(request.cwd):
+                for folder in _ancestors(request.cwd):
+                    identify_storage(folder)
+                rows.append((request.cwd, request.projects[0]))
+        except OSError as error:
+            frontiers.append({"path": str(request.cwd), "kind": "blocked", "error": type(error).__name__})
     else:
         for root in request.projects:
             walk(root, root, set())

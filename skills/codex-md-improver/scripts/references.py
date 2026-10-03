@@ -300,12 +300,12 @@ def _targets(occurrence, source, chain, declared, context, *, explicit_target=Fa
         home = str(context.get("user_home", Path.home()))
         glob_target = str(Path(glob.escape(home)) / glob_target[2:])
         target = str(Path(home) / target[2:])
-    base = occurrence.get("base") or declared.get(str(source)) or declared.get(source)
+    base = occurrence["base"] if "base" in occurrence else declared.get(str(source), declared.get(source))
     if Path(target).is_absolute():
         alternatives = [Path(target)]
         pattern = glob_target
     else:
-        bases = ([_base_path(base, source, chain)] if base else [source.parent]
+        bases = ([_base_path(base, source, chain)] if base is not None else [source.parent]
                  if occurrence["syntax"] == "markdown" else
                  [source.parent, Path(chain["scenario_project_root"]), Path(chain["cwd"])])
         alternatives = [folder / target for folder in bases]
@@ -341,6 +341,8 @@ def _validate_resolutions(resolutions):
             raise ValueError("Non-read decisions cannot supply a target or base")
         if "target" in row and not isinstance(row["target"], str):
             raise ValueError("Resolution target must be a string")
+        if "base" in row:
+            validate_reference_base(row["base"])
         key = (row["source"], tuple(span), row.get("scenario_id"))
         if any(key[:2] == old[:2] and (key[2] is None or old[2] is None or key[2] == old[2]) for old in seen):
             raise ValueError("Overlapping resolution scenario coverage")
