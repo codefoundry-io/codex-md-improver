@@ -20,6 +20,8 @@ the current plan; do not repeat the research or adopt rejected expansions.
   preservation, cross-run finding resolution and remaining interface details.
 - [x] Collect formal plan round 4 and correct occurrence classifications, separate
   cwd-inventory boundaries and reference frontiers, and complete output lifecycle.
+- [x] Collect formal plan round 5 and correct group-effective settings/trust,
+  semantic occurrence additions, comparison scope and remaining bounded contracts.
 - [ ] Receive formal plan admission from every configured reviewer.
 - [ ] Establish the exact dedicated skill executor and observe behavioral RED.
 - [ ] Implement and test the analyzer, reports and skill in task-sized changes.
@@ -33,6 +35,8 @@ The dedicated local executor and workspace registration are prepared and validat
 The active native catalog rejects `codex-md-improver-executor` with `unknown
 agent_type`; it needs a fresh session or the pending explicit owner exception.
 The TRIAD executor cannot substitute. No behavior RED/GREEN has been claimed.
+The managed-workspace prerequisite covers bundled behavior from Task 1 onward,
+not only the later SKILL.md entrypoint; static preparation does not waive it.
 
 Round 1 is [INCOMPLETE](../reviews/2026-10-03-formal-plan-r1.md): Claude/Astra requested
 fixes; both Google routes failed before review because of a nullable route enum in
@@ -62,6 +66,14 @@ mandatory route compression were not adopted; declared full-route output cost is
 distinct from the corrected Git-inventory ambiguity. A suggested metadata shortcut
 was narrowed using the pinned source's actual discovery-before-reading order.
 All R4 writers terminated, integrity passed, and export/cleanup completed.
+
+Round 5 is [BLOCKED](../reviews/2026-10-03-formal-plan-r5.md): Opus approved
+with nine Minor findings, Pro/Flash approved without findings, and Astra found
+one group-effective configuration omission. The pinned source confirms one
+Config and active-project trust per simultaneous group. That fix and bounded
+minor corrections are incorporated; independent primary-source verification
+narrowed the proposed trust-key correction. All R5 writers terminated, integrity
+passed, and export/cleanup completed. Current plan admission is still pending.
 
 No product implementation, target migration, remote publication or owner
 installation has occurred. Private review custody stays outside this repository.
