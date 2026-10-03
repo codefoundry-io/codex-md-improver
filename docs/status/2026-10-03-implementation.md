@@ -352,3 +352,21 @@ review is clean. The15-resource local candidate is built. Corrected bytes still
 require exact-head native CI and a fresh complete four-leg R15. No earlier verdict
 transfers; final merge, tag/Release and actual owner installation remain pending
 separate approval boundaries.
+
+Commit `cdb54cb` passed exact native CI `37154363232`, all five jobs. R15
+completed AGREED: all four web-enabled legs explicitly approved the same basis,
+with no open questions, missing entries or selection deviation. Claude's one
+Minor concerned locale-dependent decoding of settings/resolutions JSON.
+
+The [R15 report](../reviews/2026-10-04-formal-code-r15.md) records independent
+native locale diagnosis and the accepted two-line correction. Fresh exact RED
+observed three failed methods/one passing UTF-8 control before source edits.
+Fresh exact GREEN passed4 focused/421 full methods and validator (419 full passes,
+two platform skips), including actual Latin-1 guards and downstream Unicode
+settings/resolution behavior. All81 fingerprints/status/HEAD and separate harness/
+packager hashes were preserved; exact cleanup was independently confirmed.
+Scoped Sol/medium review is clean and the15-resource candidate is built.
+
+R15 admission remains attached to its reviewed bytes. The corrected commit needs
+exact-head CI and a fresh complete R16 before proposing final merge. Final merge,
+tag/Release and actual owner installation remain separate approvals.

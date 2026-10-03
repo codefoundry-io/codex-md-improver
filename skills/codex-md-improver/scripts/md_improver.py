@@ -192,11 +192,11 @@ def main(argv=None):
             raise ValueError("Output inside an input requires --allow-output-in-target")
         if args.max_routes is not None and args.max_routes <= 0:
             raise ValueError("--max-routes must be positive")
-        settings = json.loads(Path(args.settings).read_text()) if args.settings else {}
+        settings = json.loads(Path(args.settings).read_bytes()) if args.settings else {}
         request = ScopeRequest(projects, Path(args.codex_home) if args.codex_home else None,
                                Path(args.cwd) if args.cwd else None, settings)
         validate_request(request)
-        resolutions = json.loads(Path(args.resolutions).read_text()) if args.resolutions else []
+        resolutions = json.loads(Path(args.resolutions).read_bytes()) if args.resolutions else []
         if not isinstance(resolutions, list):
             raise ValueError("Resolutions must be a list")
         home, _ = _home(request)
