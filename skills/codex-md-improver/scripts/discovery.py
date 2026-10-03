@@ -73,6 +73,15 @@ def canonical(path: Path) -> Path:
         libc.free(pointer)
 
 
+def audit_source_boundary(real: Path, git_storage=()):
+    """Classify canonical audit sources without restricting discovery metadata reads."""
+    if ".git" in real.parts or any(real.is_relative_to(root) for root in git_storage):
+        return "excluded_git"
+    if real.name == "SKILL.md":
+        return "excluded_skill"
+    return None
+
+
 def _home(request):
     env = os.environ.get("CODEX_HOME", "")
     origin = "explicit" if request.codex_home is not None else "environment" if env else "default"

@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import stat
 from urllib.parse import unquote
-from discovery import _Content, _POLICY, canonical
+from discovery import _Content, _POLICY, canonical, audit_source_boundary
 
 
 class InvalidOutputLocation(ValueError):
@@ -127,6 +127,10 @@ def _bare_url_target(value):
     return value
 
 
+def _reference_label(label):
+    return re.sub(r"[ \t\r\n]+", " ", label.casefold()).strip(" ")
+
+
 def _lex(text, path, kind=None):
     """Heuristic candidates only; unmatched prose still needs semantic review."""
     if (kind or document_kind(path)) == "code_config":
@@ -152,7 +156,9 @@ def _lex(text, path, kind=None):
         destination = next(_inline_destinations(wrapped), None)
         if destination is None or destination[:2] != (0, len(wrapped)):
             continue
-        definitions.setdefault(match[1].casefold(), wrapped[destination[2]:destination[3]])
+        key = _reference_label(match[1])
+        if key:
+            definitions.setdefault(key, wrapped[destination[2]:destination[3]])
         occupied.append(match.span())
 
     def add(start, end, target, kind, classification=None):
@@ -181,11 +187,11 @@ def _lex(text, path, kind=None):
         add(start, end, text[start:end], "markdown", "read_dependency")
         occupied.append((opening, closing))
     for match in re.finditer(r"\[([^\]]+)\]\[([^\]]*)\]", text):
-        key = (match[2] or match[1]).casefold()
+        key = _reference_label(match[2] or match[1])
         if key in definitions:
             add(match.start(), match.end(), definitions[key], "markdown", "read_dependency")
     for match in re.finditer(r"(?<!!)\[([^\]^]+)\](?![\[(])", text):
-        key = match[1].casefold()
+        key = _reference_label(match[1])
         if key in definitions:
             add(match.start(), match.end(), definitions[key], "markdown", "read_dependency")
     tick = chr(96)
@@ -370,6 +376,7 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
     sensitive_paths = {p.resolve() for p in sensitive}
     owned = Path(context["output"]).resolve() if context.get("output") else None
     git_storage = [Path(p).resolve() for p in context.get("git_storage", [])]
+    graph["_git_storage"] = git_storage
 
     def state_key(chain, path):
         return chain["scenario_id"] + "|" + str(path)
@@ -418,12 +425,13 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
         identity = _identity(info)
         if identity in sensitive_ids or real in sensitive_paths:
             return terminal(chain, path, "excluded_sensitive", info, identity)
-        if ".git" in path.parts or ".git" in real.parts or any(real.is_relative_to(p) for p in git_storage):
+        boundary = audit_source_boundary(real, git_storage)
+        if ".git" in path.parts or boundary == "excluded_git":
             if not direct:
                 graph["boundaries"].append({"path": str(path), "kind": "git_administration"})
                 return None
             return terminal(chain, path, "excluded_git", info, identity)
-        if path.name == "SKILL.md" or real.name == "SKILL.md":
+        if boundary == "excluded_skill":
             return terminal(chain, path, "excluded_skill", info, identity)
         if identity in ancestors:
             if key not in graph["states"]:
@@ -442,9 +450,9 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             return key
         if stat.S_ISDIR(info.st_mode):
             try:
-                if (path / "SKILL.md").is_file():
-                    return terminal(chain, path, "excluded_skill", info, identity)
                 entries = sorted(path.iterdir())
+                if any(entry.name == "SKILL.md" and entry.is_file() for entry in entries):
+                    return terminal(chain, path, "excluded_skill", info, identity)
             except OSError:
                 return terminal(chain, path, "blocked_frontier")
             terminal(chain, path, "directory", info, identity)

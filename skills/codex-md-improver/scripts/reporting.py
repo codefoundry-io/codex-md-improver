@@ -58,10 +58,24 @@ def _criteria():
     return {row["id"] for row in data["criteria"]}
 
 
+def _frontiers(report):
+    rows = _list(report.get("frontiers", []))
+    for row in rows:
+        if not isinstance(row, dict):
+            raise ValueError("Invalid persisted frontier")
+        kind, path = _string(row.get("kind")), _string(row.get("path"))
+        if kind == "git_administration" and not Path(path).is_absolute():
+            raise ValueError("Git administration frontier must be absolute")
+        if "error" in row:
+            _string(row["error"])
+    return rows
+
+
 def _report_shape(report):
     """Validate persisted structures consumed by comparison/output routing."""
     if not isinstance(report, dict) or type(report.get("schema_version")) is not int or report["schema_version"] != 1:
         raise ValueError("Unsupported report schema")
+    _frontiers(report)
     scope = report.get("scope")
     if not isinstance(scope, dict) or not {"projects", "cwd", "codex_home", "settings"} <= scope.keys():
         raise ValueError("Invalid report scope")
@@ -169,12 +183,11 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
         if node.get("content_status") == "read":
             for alias in node["aliases"]:
                 aliases[alias] = node["sha256"]
-    from discovery import _Content, _POLICY, canonical
+    from discovery import _Content, _POLICY, canonical, audit_source_boundary
     content = _Content()
     home = Path(audit["scope"]["codex_home"])
     content.deny([Path.home() / path for path in _POLICY["known_sensitive_paths"]] + [home / "auth.json"])
-    git_storage = [Path(row["path"]) for row in audit.get("frontiers", [])
-                   if row.get("kind") == "git_administration"]
+    git_storage = [Path(row["path"]) for row in _frontiers(audit) if row["kind"] == "git_administration"]
     texts = {}
 
     def source(row):
@@ -185,8 +198,7 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
         if path not in texts:
             try:
                 real = canonical(Path(path))
-                if (real.name == "SKILL.md" or ".git" in real.parts
-                        or any(real.is_relative_to(root) for root in git_storage)):
+                if audit_source_boundary(real, git_storage):
                     raise ValueError("Evidence resolves to an excluded source")
                 data = content.read(Path(path))
                 if hashlib.sha256(data).hexdigest() != digest:

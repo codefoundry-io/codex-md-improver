@@ -248,3 +248,18 @@ All57 source/test fingerprints and status were preserved, exact cleanup confirme
 and independent scoped re-review was clean. The current14-file candidate is built.
 The corrected commit still requires native CI and a new full four-leg review.
 No final merge, tag/Release or actual owner installation has occurred.
+
+Commit `ec2a0de` passed native CI run `37137834714`, all five jobs. macOS each
+ran278 methods with one Linux-only skip; Ubuntu each ran278 with four native-case
+skips. Actual case checks passed on macOS and bytes-name checks on Ubuntu.
+Full code R9 was BLOCKED with all four complete: Astra requested fixes; Claude
+approved with two Minor findings; Pro and Flash approved without findings.
+The [R9 report](../reviews/2026-10-04-formal-code-r9.md) records four accepted
+defects: whitespace-equivalent Markdown labels, candidate excluded-source
+revalidation, native stored-SKILL spelling and persisted-frontier validation.
+Exact dedicated RED preceded runtime changes. Fresh GREEN passed19 focused and
+297 full methods plus validator, with one Linux-only skip. All five native alias
+tests executed. All60 fingerprints/status were preserved and exact cleanup
+confirmed. Scoped independent review is clean; the current14-file candidate is
+built. The corrected source still needs native CI and full fresh four-leg review.
+No final merge, tag/Release or actual owner installation has occurred.

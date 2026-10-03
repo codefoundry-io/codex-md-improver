@@ -89,6 +89,7 @@ def _assessment_command(args):
 
 
 def _candidate_records(graph, scenarios, content, selected):
+    from discovery import canonical, audit_source_boundary
     from lint_candidates import find_candidates
     from references import document_kind, refresh_directory_summaries
     loaded = {source["path"] for c in scenarios for source in [*c.get("sources", []), *c.get("scope_sources", [])]}
@@ -99,6 +100,14 @@ def _candidate_records(graph, scenarios, content, selected):
             path = Path(alias)
             kind = document_kind(path, alias in loaded)
             try:
+                boundary = audit_source_boundary(canonical(path), graph.get("_git_storage", []))
+                if boundary:
+                    graph["partial"], graph["text_read_complete"] = True, False
+                    graph["boundaries"].append({"path": alias, "kind": boundary, "phase": "candidates"})
+                    for state in graph["states"].values():
+                        if state["path"] == alias:
+                            state.update(kind=boundary, children=[], identity=None, bytes=None)
+                    continue
                 data = content.read(path)
                 if hashlib.sha256(data).hexdigest() != node["sha256"]:
                     raise OSError("file changed during scan")
@@ -115,7 +124,18 @@ def _candidate_records(graph, scenarios, content, selected):
                 candidate["source_sha256"] = node["sha256"]
                 result.append(candidate)
     refresh_directory_summaries(graph)
-    return result
+    reachable, seen = set(), set()
+    pending = [key for roots in graph["roots"].values() for key in roots]
+    while pending:
+        key = pending.pop()
+        if key in seen:
+            continue
+        seen.add(key)
+        state = graph["states"][key]
+        if state["kind"] in {"leaf", "cycle"}:
+            reachable.add(state["path"])
+        pending.extend(edge["state"] for edge in state["children"] if "state" in edge)
+    return [candidate for candidate in result if candidate["path"] in reachable]
 
 
 def main(argv=None):
