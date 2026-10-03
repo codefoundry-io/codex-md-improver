@@ -1,5 +1,6 @@
 """Read-only graph of scenario-bound reference occurrences and physical text."""
 import glob
+import fnmatch
 import hashlib
 import json
 import os
@@ -17,7 +18,14 @@ class InvalidOutputLocation(ValueError):
 LIMITED = {"blocked_frontier", "missing_target", "unresolved", "excluded_sensitive",
            "excluded_git", "binary", "undecodable", "special_file", "changed_during_read"}
 NON_READ = {"informational", "example", "output"}
-PROSE_SUFFIXES = {".md", ".markdown", ".txt", ".rst"}
+
+
+def document_kind(path, guidance=False):
+    if guidance:
+        return "agents_guidance"
+    if path.suffix.lower() in {".md", ".markdown"}:
+        return "markdown_reference"
+    return "linked_instruction" if path.suffix.lower() in {"", ".txt", ".rst"} else "code_config"
 
 
 def _identity(info):
@@ -29,18 +37,23 @@ def _classification(line):
     line = re.sub(r"\[[^\]]*\](?:\([^)]*\)|\[[^\]]*\])", "", line)
     line = re.sub(chr(96) + r"[^" + chr(96) + r"]*" + chr(96), "", line)
     line = re.sub(r"https?://\S+", "", line)
-    if re.search(r"\b(example|sample|e\.g\.)\b", line, re.I):
+    example = re.search(r"\b(?:example|sample)\b|\be\.g\.(?=\W|$)", line, re.I)
+    output = re.search(r"\b(write|output|save|generate|create)\b", line, re.I)
+    reading = re.search(r"\b(read|consult|follow|see)\b|읽|참조", line, re.I)
+    if reading and (example or output):
+        return "mixed"
+    if example:
         return "example"
-    if re.search(r"\b(write|output|save|generate|create)\b", line, re.I):
+    if output:
         return "output"
-    if re.search(r"\b(read|consult|follow|see)\b|읽|참조", line, re.I):
+    if reading:
         return "read_dependency"
     return "uncertain"
 
 
-def _lex(text, path):
+def _lex(text, path, kind=None):
     """Heuristic candidates only; unmatched prose still needs semantic review."""
-    if path.suffix.lower() not in PROSE_SUFFIXES:
+    if (kind or document_kind(path)) == "code_config":
         return []
     occurrences, occupied, definitions, fences = [], [], {}, []
     opening, offset = None, 0
@@ -65,7 +78,7 @@ def _lex(text, path):
         line_end = text.find("\n", end)
         line = text[line_start:line_end if line_end >= 0 else len(text)].strip()
         contextual = _classification(line)
-        inferred = contextual if contextual in NON_READ else classification or contextual
+        inferred = "uncertain" if contextual == "mixed" else contextual if contextual in NON_READ else classification or contextual
         if inferred == "uncertain" and line.startswith("|"):
             column = text[line_start:start].count("|")
             for previous in reversed(text[:line_start].splitlines()):
@@ -92,6 +105,10 @@ def _lex(text, path):
         key = (match[2] or match[1]).casefold()
         if key in definitions:
             add(match.start(), match.end(), definitions[key], "markdown", "read_dependency")
+    for match in re.finditer(r"(?<!!)\[([^\]^]+)\](?![\[(])", text):
+        key = match[1].casefold()
+        if key in definitions:
+            add(match.start(), match.end(), definitions[key], "markdown", "read_dependency")
     tick = chr(96)
     for match in re.finditer(tick + r"([^" + tick + r"\n]+)" + tick, text):
         target = match[1]
@@ -99,6 +116,8 @@ def _lex(text, path):
             add(match.start(1), match.end(1), target, "plain")
     pattern = r"(?<![\w])(?:~?/|\.{1,2}/)?[\w$.*{}-]+(?:/[\w.*{}$-]+)*(?:\.[\w]+(?::\d+)?(?:#[\w-]+)?|/)"
     for match in re.finditer(pattern, text):
+        if re.fullmatch(r"\d+(?:\.\d+)+|e\.g|i\.e", match[0], re.I):
+            continue
         add(match.start(), match.end(), match[0], "plain")
     return sorted(occurrences, key=lambda row: row["span"])
 
@@ -116,10 +135,51 @@ def _base_path(base, source, chain):
     raise ValueError("Unsupported reference base or nonabsolute path")
 
 
+def _expand_glob(path):
+    """Finite component expansion that retains failures hidden by glob.glob."""
+    parts = path.parts
+    current, frontiers = [Path(parts[0])], []
+    for index, part in enumerate(parts[1:], 1):
+        following = []
+        for parent in current:
+            if not glob.has_magic(part):
+                child = parent / part
+                try:
+                    child.lstat()
+                    following.append(child)
+                except FileNotFoundError:
+                    pass
+                except OSError:
+                    frontiers.append({"path": str(child), "kind": "blocked_frontier"})
+                continue
+            try:
+                with os.scandir(parent) as entries:
+                    for entry in entries:
+                        if entry.name.startswith(".") and not part.startswith("."):
+                            continue
+                        if not fnmatch.fnmatchcase(entry.name, part):
+                            continue
+                        try:
+                            if index == len(parts) - 1 or entry.is_dir():
+                                following.append(parent / entry.name)
+                        except OSError:
+                            frontiers.append({"path": str(parent / entry.name), "kind": "blocked_frontier"})
+            except (FileNotFoundError, NotADirectoryError):
+                pass
+            except OSError:
+                frontiers.append({"path": str(parent), "kind": "blocked_frontier"})
+        current = sorted(set(following))
+    return current, list({(row["path"], row["kind"]): row for row in frontiers}.values())
+
+
 def _targets(occurrence, source, chain, declared, context):
     target = occurrence["target_text"]
-    if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", target):
-        return "url", [], []
+    if target.startswith("#"):
+        return "self_reference", [], [], []
+    filename_line = re.fullmatch(r"[^:/]+\.[^:/]+:\d+(?::\d+)?(?:#.*)?", target)
+    if re.match(r"^[A-Za-z][A-Za-z0-9+.-]*://", target) or (
+            re.match(r"^[A-Za-z][A-Za-z0-9+.-]*:", target) and not filename_line):
+        return "url", [], [], []
     target = unquote(urlsplit(target).path) if "#" in target else unquote(target)
     target = re.sub(r":\d+(?::\d+)?$", "", target)
     substitutions = {"HOME": str(context.get("user_home", Path.home())),
@@ -133,7 +193,7 @@ def _targets(occurrence, source, chain, declared, context):
         return substitutions.get(name, match[0])
     target = re.sub(r"\$\{(\w+)\}|\$(\w+)", expand, target)
     if unknown or not target or "\0" in target:
-        return "unresolved", [], []
+        return "unresolved", [], [], []
     if target == "~" or target.startswith("~/"):
         target = str(Path(context.get("user_home", Path.home())) / target[2:])
     base = occurrence.get("base") or declared.get(str(source)) or declared.get(source)
@@ -147,12 +207,12 @@ def _targets(occurrence, source, chain, declared, context):
         alternatives = [source.parent / target, Path(chain["scenario_project_root"]) / target, Path(chain["cwd"]) / target]
     alternatives = list(dict.fromkeys(Path(os.path.abspath(p)) for p in alternatives))
     if len(alternatives) != 1:
-        return "unresolved", [], [str(p) for p in alternatives]
+        return "unresolved", [], [str(p) for p in alternatives], []
     resolved = alternatives[0]
     if glob.has_magic(str(resolved)):
-        matches = sorted(set(Path(p) for p in glob.glob(str(resolved), recursive=False)))
-        return ("resolved", matches, []) if matches else ("unresolved", [], [str(resolved)])
-    return "resolved", [resolved], []
+        matches, frontiers = _expand_glob(resolved)
+        return ("resolved", matches, [], frontiers) if matches or frontiers else ("unresolved", [], [str(resolved)], [])
+    return "resolved", [resolved], [], []
 
 
 def _validate_resolutions(resolutions):
@@ -309,7 +369,8 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             node["aliases"].append(str(path))
         text = texts[identity]
         terminal(chain, path, "leaf", info, identity)
-        candidates = _lex(text, path)
+        guidance = {s["path"] for s in [chain.get("global_source", {}), *chain["sources"], *chain.get("scope_sources", [])] if s.get("path")}
+        candidates = _lex(text, path, document_kind(path, str(path) in guidance))
         for index, resolution in enumerate(resolutions):
             if resolution["source"] != str(path) or resolution.get("scenario_id", chain["scenario_id"]) != chain["scenario_id"]:
                 continue
@@ -334,16 +395,22 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             occurrence["id"] = hashlib.sha256(json.dumps([str(path), candidate["span"], chain["scenario_id"]]).encode()).hexdigest()[:20]
             classification = candidate["classification"]
             if classification in NON_READ:
-                status, targets, alternatives = "non_read", [], []
+                status, targets, alternatives, frontiers = "non_read", [], [], []
             elif classification == "uncertain":
-                status, targets, alternatives = "unresolved", [], []
+                status, targets, alternatives, frontiers = "unresolved", [], [], []
             else:
-                status, targets, alternatives = _targets(candidate, path, chain, declared, context)
+                status, targets, alternatives, frontiers = _targets(candidate, path, chain, declared, context)
             occurrence.update(status=status, targets=[str(p) for p in targets], alternatives=alternatives)
+            if frontiers:
+                occurrence["expansion_frontiers"] = frontiers
             graph["occurrences"].append(occurrence)
             if status == "unresolved":
                 graph["partial"], graph["text_read_complete"] = True, False
                 graph["states"][key]["children"].append({"kind": "unresolved", "condition": candidate["condition"],
+                                                        "occurrence_id": occurrence["id"]})
+            for frontier in frontiers:
+                child = terminal(chain, Path(frontier["path"]), frontier["kind"])
+                graph["states"][key]["children"].append({"state": child, "condition": candidate["condition"],
                                                         "occurrence_id": occurrence["id"]})
             for target in targets:
                 child = visit(target, chain, ancestors | {identity})
@@ -371,9 +438,15 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             if "state" in edge:
                 ids |= descendant_ids(edge["state"], seen | {key})
         return ids
+    directory_ids = {}
+    graph["directory_totals_by_scenario"] = {}
     for key, state in graph["states"].items():
         if state["kind"] in {"directory", "empty_directory"}:
-            graph["directory_totals"][state["path"]] = sum(graph["nodes"][i]["bytes"] for i in descendant_ids(key, set()))
+            ids = descendant_ids(key, set())
+            scenario = key[:-(len(state["path"]) + 1)]
+            graph["directory_totals_by_scenario"].setdefault(scenario, {})[state["path"]] = sum(graph["nodes"][i]["bytes"] for i in ids)
+            directory_ids.setdefault(state["path"], set()).update(ids)
+    graph["directory_totals"] = {path: sum(graph["nodes"][i]["bytes"] for i in ids) for path, ids in directory_ids.items()}
     return graph
 
 
@@ -425,4 +498,5 @@ def summarize_reading_paths(graph):
     return {"unique_text_bytes": sum(n["bytes"] for n in graph["nodes"].values()),
             "physical_text_files": len(graph["nodes"]), "occurrences": len(graph["occurrences"]),
             "text_read_complete": graph["text_read_complete"], "partial": graph["partial"],
-            "semantic_review_complete": False, "directory_totals": graph["directory_totals"]}
+            "semantic_review_complete": False, "directory_totals": graph["directory_totals"],
+            "directory_totals_by_scenario": graph["directory_totals_by_scenario"]}

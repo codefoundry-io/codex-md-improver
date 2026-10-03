@@ -152,3 +152,13 @@ exact implementation commit: macOS/Ubuntu with Python 3.11/3.12 and the Python
 the observed publication/CI status. Current-head CI and full pre-merge review
 follow the documentation update. No target migration, tag/release, final merge
 or owner installation has occurred. Private custody remains outside the repository.
+
+The README follow-up commit `31771f8` also passed native CI run `37117145031`
+(four 150-test jobs plus the Python 3.10 rejection guard). Full pre-merge code R1
+completed with all four legs and was blocked by concrete Opus/Astra findings.
+The bounded corrections and dispositions are recorded in the R1 code review report.
+Final local dedicated verification now passes 16 focused / 166 full tests plus
+the validator, with unchanged fingerprints and exact fixture cleanup; scoped
+source rereview is clean. A new deterministic candidate reflects the corrected
+source. The amended commit still needs its own native CI and full new four-leg
+review. No previous code or plan approval transfers to those changed bytes.

@@ -141,7 +141,9 @@ def _report_shape(report):
         key = (_hash(row["before_report_sha256"]), _string(row["before_finding_id"]))
         if key in targets or row["baseline_validation"] != "pending": raise ValueError("Invalid persisted resolution")
         targets.add(key); snapshot_evidence(row["evidence"]); _string(row["reason"])
-    if any(not isinstance(p, str) or not Path(p).is_absolute() for p in _list(report.get("reviewed_sources", []))):
+    reviewed = _list(report.get("reviewed_sources", []))
+    if (any(not isinstance(p, str) or p not in aliases for p in reviewed)
+            or len(set(reviewed)) != len(reviewed)):
         raise ValueError("Invalid reviewed-source list")
 
 

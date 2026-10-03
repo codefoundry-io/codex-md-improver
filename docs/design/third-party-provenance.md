@@ -8,9 +8,9 @@ documentation recorded in the existing research/review documents. Referencing
 those contracts does not copy their implementation into this package.
 
 The included-criterion metadata derives from the owner's selected requirements.
-Verbatim requirements-ledger publication, or publication of an independently
-derived ID fixture with ledger-hash provenance, remains an explicit owner decision.
-This provenance statement does not authorize either publication option.
+The owner explicitly approved public inclusion of the verbatim requirements ledger
+and existing process history before this repository was created and pushed.
+That source-publication decision does not authorize merge, release or installation.
 
 MIT was selected by the owner. The repository and selected skill subtree contain
 identical LICENSE bytes; the package and installation tests preserve those bytes.
@@ -22,4 +22,4 @@ its own provenance and notice review.
 Package allowlisting and reachable Git-history publication are separate checks.
 Private run receipts, audited real documents, host configuration, credentials and
 generated reports are outside the release tree. Existing tracked owner/process
-records still require deliberate public-history inclusion before remote publication.
+records were included in the owner's approved public-history boundary.

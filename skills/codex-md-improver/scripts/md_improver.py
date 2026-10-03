@@ -90,14 +90,24 @@ def _assessment_command(args):
 
 def _candidate_records(graph, scenarios, content, selected):
     from lint_candidates import find_candidates
+    from references import document_kind
     loaded = {source["path"] for c in scenarios for source in [*c.get("sources", []), *c.get("scope_sources", [])]}
     loaded |= {c["global_source"]["path"] for c in scenarios if c.get("global_source", {}).get("path")}
     result = []
     for node in graph["nodes"].values():
         for alias in node["aliases"]:
             path = Path(alias)
-            kind = "agents_guidance" if alias in loaded else "markdown_reference" if path.suffix.lower() == ".md" else "linked_instruction" if path.suffix.lower() in {"", ".txt", ".rst"} else "code_config"
-            text = content.read(path).decode("utf-8")
+            kind = document_kind(path, alias in loaded)
+            try:
+                text = content.read(path).decode("utf-8")
+            except (OSError, UnicodeError) as error:
+                failure = "changed_during_read" if "changed during" in str(error) else "blocked_frontier"
+                graph["partial"], graph["text_read_complete"] = True, False
+                graph["boundaries"].append({"path": alias, "kind": failure, "phase": "candidates"})
+                for state in graph["states"].values():
+                    if state["path"] == alias:
+                        state.update(kind=failure, children=[])
+                continue
             for candidate in find_candidates(text, path, kind, selected):
                 candidate["source_sha256"] = node["sha256"]
                 result.append(candidate)
@@ -171,11 +181,11 @@ def main(argv=None):
             context={"codex_home": home, "output": out, "allow_output_in_target": args.allow_output_in_target,
                      "content": content, "git_storage": [f["path"] for f in result["frontiers"]
                                                         if f["kind"] == "git_administration"]})
+        result["candidates"] = _candidate_records(graph, scenarios, content, set(_POLICY["detector_ids"]))
         result["graph"] = {k: v for k, v in graph.items() if not k.startswith("_")}
         result["reading_summary"] = summarize_reading_paths(graph)
         result["text_read_complete"] = graph["text_read_complete"]
         result["partial"] |= graph["partial"]
-        result["candidates"] = _candidate_records(graph, scenarios, content, set(_POLICY["detector_ids"]))
         if result["exit_code"] == 0 and result["candidates"]:
             result["exit_code"] = 1
         manifest["phase"] = "routes"

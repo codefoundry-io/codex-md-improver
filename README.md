@@ -48,6 +48,8 @@ The scan writes `audit.json`, `audit.md`, complete `routes.jsonl` and `manifest.
 Original bytes, loader-charged bytes and linked reading volume are distinct metrics.
 Shared physical text is counted uniquely while all route identities are retained.
 Directory subtotals count reachable graph text, not filesystem directory size.
+Per-scenario subtotals preserve different relative-reference meanings; shared
+directory totals count the union of physical text across those scenarios.
 
 The skill reviews candidates and writes an assessment using the
 [record schema](skills/codex-md-improver/references/assessment-format.md), then runs:

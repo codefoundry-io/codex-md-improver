@@ -26,6 +26,7 @@ class LoaderSettings:
     root_markers: list[str] | None = None
     trust: str = "unknown"
     trust_key: str | None = None
+    client: dict = field(default_factory=dict)
     provenance: dict = field(default_factory=dict)
     unresolved: list[str] = field(default_factory=list)
 
@@ -278,6 +279,7 @@ def resolve_settings(request: ScopeRequest, cwd: Path) -> LoaderSettings:
     home, _ = _home(request)
     config, error = _config(home / "config.toml")
     values = dict(DEFAULTS) if not error else {key: None for key in DEFAULTS}
+    origins = {key: "unresolved_user_config" if error else "pinned_default" for key in DEFAULTS}
     problems = ["user_config:" + error] if error else []
     observed = {}
     project_entries = config.get("projects", {})
@@ -291,18 +293,21 @@ def resolve_settings(request: ScopeRequest, cwd: Path) -> LoaderSettings:
                 observed[key] = "unknown"
     else:
         trust_table_error = "invalid_projects_table"
-    def apply(table, project=False):
+    def apply(table, origin, project=False):
         picked = {field: table[key] for key, field in CONFIG_FIELDS.items()
                   if key in table and not (project and field == "root_markers")}
         try:
             _fields(picked)
             values.update(picked)
+            origins.update({key: origin for key in picked})
         except ValueError:
             problems.append("invalid_relevant_config")
             for key in picked:
                 values[key] = None
-    apply(config)
+                origins[key] = "unresolved:" + origin
+    apply(config, "observed_user_config")
     values.update(request.settings.get("non_project", {}))
+    origins.update({key: "supplied_non_project" for key in request.settings.get("non_project", {})})
     trust, trust_key, trust_error = _trust(cwd, observed, request.settings.get("trust", {}), trust_table_error)
     if trust_error or trust == "unknown":
         problems.append("trust:" + (trust_error or "explicit_unknown"))
@@ -310,24 +315,36 @@ def resolve_settings(request: ScopeRequest, cwd: Path) -> LoaderSettings:
     # Project layers cannot set this field, including the ancestry used to read them.
     markers = overrides.get("root_markers", values["root_markers"])
     root = _marker_root(cwd, markers) if markers is not None else cwd
-    if trust == "trusted":
+    before_project, before_origins = dict(values), dict(origins)
+    if trust in {"trusted", "unknown"}:
         for folder in reversed(_ancestors(cwd)[:_ancestors(cwd).index(root) + 1]):
-            local, failure = _config(folder / ".codex/config.toml")
+            path = folder / ".codex/config.toml"
+            local, failure = _config(path)
             if failure:
                 problems.append("project_config:" + failure)
                 values["limit"], values["fallback_names"] = None, None
+                origins.update({key: "unresolved_project_config:" + str(path) for key in ("limit", "fallback_names")})
             else:
-                apply(local, project=True)
+                apply(local, "trusted_project:" + str(path), project=True)
+        if trust == "unknown":
+            for key in ("limit", "fallback_names"):
+                if values[key] != before_project[key]:
+                    values[key] = None
+                    origins[key] = "unresolved_project_eligibility"
+                else:
+                    origins[key] = before_origins[key]
     values.update(overrides)
+    origins.update({key: "supplied_session_override" for key in overrides})
     ignored = []
     values["fallback_names"] = _fallback_names(values["fallback_names"], ignored)
     for key, value in values.items():
         if value is None:
             problems.append("unknown:" + key)
-    return LoaderSettings(**values, trust=trust, trust_key=trust_key,
+    return LoaderSettings(**values, trust=trust, trust_key=trust_key, client=dict(request.settings.get("client", {})),
                           provenance={"scenario": "observed_plus_defaults", "unattested_live_layers": ["system", "profile", "cloud", "session"],
                                       "trust_source": "supplied" if trust_key in request.settings.get("trust", {}) else "observed",
                                       "ignored_fallback_names": ignored,
+                                      "fields": origins, "client_source": "supplied" if "client" in request.settings else "unattested",
                                       "live_runtime_attested": False}, unresolved=sorted(set(problems)))
 
 
@@ -482,7 +499,7 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
             continue
         except OSError as error:
             scope_sources.append({"path": str(path), "sha256": None, "error": type(error).__name__})
-    record = {"scenario_id": hashlib.sha256(str(cwd).encode()).hexdigest()[:16], "cwd": str(cwd),
+    record = {"scenario_id": hashlib.sha256(json.dumps([str(inventory_root), str(cwd)]).encode()).hexdigest()[:16], "cwd": str(cwd),
               "scenario_project_root": str(root), "inventory_root": str(inventory_root), "settings": asdict(settings),
               "sources": sources, "scope_sources": scope_sources, "global_source": global_source, "project_original_bytes": original,
               "project_included_bytes": included, "project_retained_raw_bytes": charged,
@@ -576,7 +593,9 @@ def scan(request: ScopeRequest, *, content=None, excluded_paths=()) -> dict:
         ignored = []
         effective = LoaderSettings(limit=raw.get("limit"), fallback_names=_fallback_names(raw.get("fallback_names"), ignored),
             root_markers=raw.get("root_markers"), trust=raw.get("trust", "unknown"),
-            provenance={**raw.get("provenance", {}), "scenario": "supplied_group_effective", "ignored_fallback_names": ignored})
+            client=dict(request.settings.get("client", {})),
+            provenance={**raw.get("provenance", {}), "scenario": "supplied_group_effective", "ignored_fallback_names": ignored,
+                        "client_source": "supplied" if "client" in request.settings else "unattested", "live_runtime_attested": False})
         remaining = effective.limit
         members = []
         for name in group["cwds"]:

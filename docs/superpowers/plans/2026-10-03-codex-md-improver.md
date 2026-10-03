@@ -435,6 +435,14 @@ boundaries; the metadata total includes expanded JSON formatting for 107 IDs.
 The functional outcome is unchanged. Local verification now comprises 150 tests,
 separate dedicated semantic behavior and bounded context-limited choice probes.
 
+Code R1 correction size: production +137/-32 lines, net +105, giving 2,165
+production Python lines across the same seven files. Estimated novel core is
+approximately 850-1,050 lines. Regression additions are 297 test lines across
+three files; review/status/provenance documentation is counted separately.
+Growth corrects approved reference, partial-coverage, snapshot-binding and scenario
+contracts; it adds no new audit population or configuration emulator. Final local
+dedicated verification now passes 166 tests plus the skill validator.
+
 ## 8. Decisions reserved for the owner or execution preflight
 
 | Question | Proposed starting point | Boundary |
