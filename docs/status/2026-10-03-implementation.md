@@ -23,7 +23,8 @@ the current plan; do not repeat the research or adopt rejected expansions.
 - [x] Collect formal plan round 5 and correct group-effective settings/trust,
   semantic occurrence additions, comparison scope and remaining bounded contracts.
 - [x] Collect formal plan round 6 and record current dispositions for a new-session handoff.
-- [ ] Correct R6's default observed-trust scenario contradiction and perform the next complete plan review.
+- [x] Correct R6's default observed-trust scenario contradiction and bounded minor contracts.
+- [ ] Perform the next complete plan review against the corrected basis.
 - [ ] Receive formal plan admission from every configured reviewer.
 - [ ] Establish the exact dedicated skill executor and observe behavioral RED.
 - [ ] Implement and test the analyzer, reports and skill in task-sized changes.
@@ -33,16 +34,18 @@ the current plan; do not repeat the research or adopt rejected expansions.
 - [ ] Obtain final merge authorization, then satisfy the separately applicable
   tag/release and actual owner-installation boundaries.
 
-The dedicated local executor and workspace registration are prepared and validated.
-The active native catalog rejects `codex-md-improver-executor` with `unknown
-agent_type`; it needs a fresh session or the pending explicit owner exception.
-The TRIAD executor cannot substitute. No behavior RED/GREEN has been claimed.
+The resumed Desktop session accepted a capability-only fresh native spawn with
+exact `agent_type="codex-md-improver-executor"` and `fork_turns="none"`.
+The child confirmed its executor instructions and configured canonical SOT path.
+This is current role-availability evidence, not source-loading or behavior proof;
+hidden runtime identity remains unexposed. The TRIAD executor cannot substitute.
+No behavior RED/GREEN has been claimed.
 The managed-workspace prerequisite covers bundled behavior from Task 1 onward,
 not only the later SKILL.md entrypoint; static preparation does not waive it.
 A separate fresh ephemeral CLI capability probe reported exact-role acceptance;
 its captured stream lacks the complete spawn receipt. This is supporting role
-exposure evidence only. The new Desktop session must verify its exact native
-catalog before testing; no default-role exception has been granted.
+exposure evidence only. The resumed Desktop check now supplies exact native
+spawn acceptance; no default-role exception has been granted.
 
 Round 1 is [INCOMPLETE](../reviews/2026-10-03-formal-plan-r1.md): Claude/Astra requested
 fixes; both Google routes failed before review because of a nullable route enum in
@@ -83,12 +86,16 @@ passed, and export/cleanup completed. Current plan admission is still pending.
 
 Round 6 is [BLOCKED](../reviews/2026-10-03-formal-plan-r6.md): Astra/Pro/Flash
 approved without findings. Opus found one default observed-trust contradiction
-and six Minor issues. The blocking correction is accepted but not applied;
-the reviewed plan remains `c536a3a`. Bounded minor dispositions are recorded,
+and six Minor issues. The reviewed plan was `c536a3a`; its bounded correction
+has now been applied for a new complete round. Minor dispositions are recorded,
 including two optional scope/representation proposals not adopted. All writers
 terminated and collection passed integrity; export and exact temporary cleanup
-completed. The owner requested a prepared new-session handoff; R7 and product
-implementation have not started.
+completed. The owner requested a prepared new-session handoff. The resumed
+session has corrected the observed-plus-defaults/trust-key contract, group
+delivery and executor task mapping. A bounded native macOS fixture substantiated
+the Python/native canonical-spelling difference; the plan requires conformant
+lookup evidence without mandating ctypes. R7 preparation/review and product
+implementation remain pending.
 
 No product implementation, target migration, remote publication or owner
 installation has occurred. Private review custody stays outside this repository.
