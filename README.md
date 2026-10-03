@@ -48,7 +48,8 @@ repository validation. Indirections that encompass their own project directory,
 another selected project or the explicit audit cwd are rejected and reported as
 partial coverage. Non-directory `.git` symlinks are also blocked.
 Modeled trust lookup separately follows the pinned Codex path normalization.
-NUL-bearing Git metadata supplies no trust fallback.
+Git trust metadata uses the pinned ASCII whitespace rules; VT remains a literal
+path character. NUL-bearing metadata supplies no trust fallback.
 
 The scan writes `audit.json`, `audit.md`, `routes.jsonl` and `manifest.json`.
 The route stream is complete unless `--max-routes` truncates it; `route_limit_reached`
@@ -65,6 +66,9 @@ An unavailable loader prefix also makes route totals lower bounds. Directory
 summaries reflect later read-validation failures and the remaining reachable edges.
 Explicit environment groups report original-volume warnings against their shared
 budget; an exhausted later member is distinguished from trust or zero-limit gating.
+Members within Git administration storage remain unresolved without reading their
+guidance or creating reference roots. Their unknown contribution propagates through
+the shared budget; a known gate or exhausted budget still contributes zero.
 
 Recursive `**` glob components remain unresolved until a concrete source-bound
 decision is supplied. URLs, including `file:`, are inventoried without traversal.
@@ -93,7 +97,9 @@ python3 -B "$SKILL_DIR/scripts/md_improver.py" compare \
 ```
 
 Each CLI output directory must be new and its parent must already exist.
-Containment checks account for filesystem aliases, including native case aliases.
+Containment checks account for filesystem aliases, with native case aliases verified
+on macOS. Native Linux casefold-volume behavior remains untested by ordinary
+case-sensitive Ubuntu CI.
 Output within an input requires `--allow-output-in-target`; files owned by the
 current run remain excluded from its audit. CLI assessment hashes bind the actual
 input JSON bytes. Findings retain exact source hashes/spans; rejected leads and pending

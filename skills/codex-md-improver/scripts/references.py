@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import stat
 from urllib.parse import unquote
-from discovery import _Content, _POLICY, canonical, audit_source_boundary
+from discovery import _Content, _POLICY, canonical, audit_source_boundary, validate_reference_base
 
 
 class InvalidOutputLocation(ValueError):
@@ -214,16 +214,10 @@ def _lex(text, path, kind=None):
 
 
 def _base_path(base, source, chain):
-    if not isinstance(base, dict) or set(base) - {"kind", "path"}:
-        raise ValueError("Invalid reference base")
+    kind = validate_reference_base(base)
     mapping = {"document_dir": source.parent, "scenario_project_root": Path(chain["scenario_project_root"]),
                "scenario_cwd": Path(chain["cwd"])}
-    kind = base.get("kind")
-    if kind in mapping and "path" not in base:
-        return mapping[kind]
-    if kind == "absolute" and isinstance(base.get("path"), str) and Path(base["path"]).is_absolute():
-        return Path(base["path"])
-    raise ValueError("Unsupported reference base or nonabsolute path")
+    return Path(base["path"]) if kind == "absolute" else mapping[kind]
 
 
 def _expand_glob(path):

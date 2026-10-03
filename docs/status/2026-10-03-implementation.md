@@ -317,3 +317,21 @@ exact fixture removal was independently confirmed. Scoped rereview is clean,
 and the current15-resource candidate is built. SKILL.md wording is unchanged.
 The corrected commit still requires exact-head CI and a new full four-leg round.
 No final merge, tag/Release or actual owner installation has occurred.
+
+Commit `6d3f876` passed exact native CI `37148928816`, all five jobs. R13
+completed BLOCKED: Astra requested fixes; Claude, Pro and Flash approved.
+The [R13 report](../reviews/2026-10-04-formal-code-r13.md) records the accepted
+group-boundary bypass, trust-only VT whitespace correction and eager declared-base
+validation. The direct cwd normalization request is refuted by the approved
+canonical-then-original key contract; Git metadata joins are a separate boundary.
+README qualifies macOS evidence versus untested Linux casefold volumes.
+
+Fresh exact dedicated RED26 observed21 failed methods/45 assertion records before
+root correction. Fresh exact GREEN passed26 focused/402 full methods and validator,
+with400 full-suite passes and two platform skips. All downstream R13 assertions
+and distribution checks passed; all76 fingerprints/status/HEAD and separate
+packager/harness hashes were preserved, with independently confirmed exact cleanup.
+Scoped Sol/high source review is clean. The15-resource local candidate is built.
+Current corrected bytes still require exact-head CI and a fresh complete R14
+with the same four web-enabled legs. No final merge, tag/Release or actual owner
+installation has occurred.

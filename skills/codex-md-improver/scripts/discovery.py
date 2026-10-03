@@ -82,6 +82,17 @@ def _mapping(value, allowed, label):
         raise ValueError("Invalid " + label + " fields")
 
 
+def validate_reference_base(base):
+    _mapping(base, {"kind", "path"}, "reference base")
+    kind = base.get("kind")
+    if kind in ("document_dir", "scenario_project_root", "scenario_cwd") and set(base) == {"kind"}:
+        return kind
+    if (kind == "absolute" and set(base) == {"kind", "path"}
+            and isinstance(base["path"], str) and Path(base["path"]).is_absolute()):
+        return kind
+    raise ValueError("Unsupported reference base or nonabsolute path")
+
+
 def _fields(value):
     _mapping(value, DEFAULTS, "loader settings")
     for key, item in value.items():
@@ -117,6 +128,10 @@ def validate_request(request):
             raise ValueError("client values must be strings")
     if not isinstance(obj.get("declared_bases", {}), dict):
         raise ValueError("declared_bases must be an object")
+    for alias, base in obj.get("declared_bases", {}).items():
+        if not isinstance(alias, str) or not Path(alias).is_absolute():
+            raise ValueError("declared_bases requires absolute source aliases")
+        validate_reference_base(base)
     groups = obj.get("environment_groups", [])
     if not isinstance(groups, list):
         raise ValueError("environment_groups must be a list")
@@ -166,11 +181,11 @@ def _marker_root(cwd, markers):
     return cwd
 
 
-def _metadata_text(path, content):
+def _metadata_text(path, content, *, whitespace=" \t\r\n\f"):
     info = path.lstat()
     if not stat.S_ISREG(info.st_mode) or info.st_size > 65536:
         return None
-    text = content.read(path).decode("utf-8").strip(" \t\r\n\v\f")
+    text = content.read(path).decode("utf-8").strip(whitespace)
     return None if "\0" in text else text
 
 
@@ -180,10 +195,12 @@ def _lexical_join(base, target):
 
 
 def _git_pointer(path, content, *, lexical=False):
-    text = _metadata_text(path, content)
+    # Rust trim_ascii excludes VT; inventory keeps its existing whitespace set.
+    whitespace = " \t\r\n\f" + ("" if lexical else "\v")
+    text = _metadata_text(path, content, whitespace=whitespace)
     if text is None or not text.startswith("gitdir:"):
         return None
-    target = text[7:].strip(" \t\r\n\v\f")
+    target = text[7:].strip(whitespace)
     if not target:
         return None
     return _lexical_join(path.parent, target) if lexical else path.parent / target
@@ -450,9 +467,9 @@ def _volume_flags(original, limit):
     return warning, excess
 
 
-def _chain(cwd, inventory_root, settings, global_source, content, remaining=_INDEPENDENT_BUDGET):
+def _chain(cwd, inventory_root, settings, global_source, content, remaining=_INDEPENDENT_BUDGET, *, scope_error=None):
     budget = settings.limit if remaining is _INDEPENDENT_BUDGET else remaining
-    root, paths, discovery_error = _selected(cwd, settings)
+    root, paths, discovery_error = (cwd, [], scope_error) if scope_error else _selected(cwd, settings)
     sources, volume = [], 0
     for path in paths:
         record = {"path": str(path), "original_bytes": None, "sha256": None, "read_error": None,
@@ -507,7 +524,7 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
     original = None if discovery_error or any(s["original_bytes"] is None for s in sources) else volume
     warning, excess = _volume_flags(original, settings.limit)
     scope_sources = []
-    for name in ["AGENTS.override.md", "AGENTS.md", *(settings.fallback_names or [])]:
+    for name in ([] if scope_error else ["AGENTS.override.md", "AGENTS.md", *(settings.fallback_names or [])]):
         path = cwd / name
         try:
             if not stat.S_ISREG(path.stat().st_mode):
@@ -522,10 +539,10 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
             scope_sources.append({"path": str(path), "sha256": None, "error": type(error).__name__})
     record = {"scenario_id": hashlib.sha256(json.dumps([str(inventory_root), str(cwd)]).encode()).hexdigest()[:16], "cwd": str(cwd),
               "scenario_project_root": str(root), "inventory_root": str(inventory_root), "settings": asdict(settings),
-              "sources": sources, "scope_sources": scope_sources, "global_source": global_source, "project_original_bytes": original,
+              "sources": sources, "scope_sources": scope_sources, "global_source": {} if scope_error else global_source, "project_original_bytes": original,
               "project_included_bytes": included, "project_retained_raw_bytes": charged,
               "warning": warning, "raw_volume_exceeds_budget": excess, "loader_outcome": outcome,
-              "modeled_loader_error": None if gate or exhausted or discovery_error == "unknown_discovery_settings" else discovery_error or
+              "modeled_loader_error": None if gate or exhausted or scope_error or discovery_error == "unknown_discovery_settings" else discovery_error or
                   ("read_error" if outcome == "environment_read_error" else None),
               "delivery": "conditional_on_runtime_permissions", "partial": bool(discovery_error or included is None or
                   global_source["warnings"] or any(s["read_error"] for s in sources) or
@@ -626,6 +643,7 @@ def scan(request: ScopeRequest, *, content=None, excluded_paths=()) -> dict:
     inventory, frontiers = _inventory(request, content, excluded_paths)
     chains = [_chain(cwd, root, resolve_settings(request, cwd, content=content), global_source, content) for cwd, root in inventory]
     groups = []
+    git_storage = [Path(f["path"]) for f in frontiers if f["kind"] == "git_administration"]
     for group in request.settings.get("environment_groups", []):
         raw = group.get("effective_loader_settings", {})
         ignored = []
@@ -639,7 +657,11 @@ def scan(request: ScopeRequest, *, content=None, excluded_paths=()) -> dict:
         for name in group["cwds"]:
             cwd = Path(name)
             owner = next(root for root in request.projects if cwd.is_relative_to(root))
-            member = _chain(cwd, owner, effective, global_source, content, remaining)
+            try:
+                scope_error = "excluded_git" if ".git" in cwd.parts else audit_source_boundary(canonical(cwd), git_storage)
+            except OSError as error:
+                scope_error = type(error).__name__
+            member = _chain(cwd, owner, effective, global_source, content, remaining, scope_error=scope_error)
             member["environment_group_id"] = group["id"]
             member["scenario_id"] = "group:" + group["id"] + ":" + member["scenario_id"]
             members.append(member)
