@@ -156,11 +156,10 @@ def _read_sections(text, fences):
 
 
 def _pipe_positions(line):
-    positions, slashes = [], 0
+    positions = []
     for index, char in enumerate(line):
-        if char == "|" and slashes % 2 == 0:
+        if char == "|" and (index == 0 or line[index - 1] != "\\"):
             positions.append(index)
-        slashes = slashes + 1 if char == "\\" else 0
     return positions
 
 

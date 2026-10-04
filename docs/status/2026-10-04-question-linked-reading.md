@@ -59,6 +59,22 @@ separate scope; this patch corrects the new Reference fallback. Conservative
 operation-label vetoes are now documented in README. No further question wording
 change or repeated choice simulation was needed.
 
+Commit 2c4e737 passed all five native CI jobs. The second complete code round
+returned SAFE from all four legs, with integrity, export and exact cleanup complete.
+One Minor finding still exposed a real discrepancy in the new Reference parser:
+an even-length backslash run before a pipe changed the inferred table column.
+Primary cmark-gfm scanner inspection confirmed that any immediately preceding
+backslash escapes that pipe. Fresh exact RED reproduced four failing subtests
+with odd-run controls passing before the narrow predicate correction.
+
+A separate fresh dedicated GREEN then passed both focused methods (runs 1–4),
+all 457 public methods (455 passed, two platform skips), all distribution checks
+and the validator. Both bounded live probes again recognized/resolved all 10
+direct policy references. Fingerprints/status stayed unchanged and the exact
+fixture was removed. Independent Sol/high static re-review found no new concrete
+defect. README also discloses the admitted noun-heading precision limit; no new
+classification heuristic or question wording change was introduced.
+
 Current remaining gates: corrected-commit native CI and a fresh four-leg code review,
 then concrete final merge approval. Release and replacing the installed v0.1.0
 copy require their separate approvals; neither is performed by source validation.

@@ -58,10 +58,10 @@ checkout and intentional unrelated changes; installed v0.1.0 remains a consumer.
 ## Size and limits
 
 Initial estimate: Python +100–200/-5–20, net +80–195; novel core about 70–130 lines.
-After code review: Python +175/-0, net +175 across two modules, with about 170 lines
-of new core logic. Skill/reference guidance +21/-0. Tests/fixtures +947/-0 include
+After code review: Python +174/-0, net +174 across two modules, with about 170 lines
+of new core logic. Skill/reference guidance +21/-0. Tests/fixtures +989/-0 include
 41 lines for column/delimiter defects and 188 for persisted-input, global-loader
-and heading controls. Growth serves the same outcome: safe, complete presentation
+and heading controls, plus 42 for GFM backslash-run controls. Growth serves the same outcome: safe, complete presentation
 of existing reading evidence. README, this plan and status records are separate.
 
 The current instruction-file excerpt supplies reproducible evidence; no claim is

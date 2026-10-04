@@ -88,8 +88,11 @@ also treats output/example words in operation labels (such as `Create a release`
 or `Write tests`) as a veto; use an exact source-bound resolution and rescan when
 the instruction still requires that read. `Read`/`Load` must be followed by
 whitespace or the end of the heading, so `Load: guides` does not open this context.
-The heuristic does not settle distinct document/project/cwd bases; justified resolutions still
-require a rescan. Nested cwd scenarios can therefore retain unresolved links.
+Noun headings such as `Load testing` or `Read replicas` also match this lexical
+rule; use a source-bound informational resolution and rescan when the reference
+is not a required read. The heuristic does not settle distinct document/project/cwd
+bases; justified resolutions still require a rescan. Nested cwd scenarios can
+therefore retain unresolved links.
 POSIX filename bytes that cannot be UTF-8 encoded are escaped in reports; JSON
 preserves their filesystem representation, and normal Unicode stays unchanged.
 
