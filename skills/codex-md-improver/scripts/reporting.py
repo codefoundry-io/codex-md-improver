@@ -73,6 +73,55 @@ def _frontiers(report):
     return rows
 
 
+def _reading_shape(report, scenarios):
+    """Validate persisted fields consumed by the reading-evidence tables."""
+    def text(record, names):
+        for name in names:
+            if record.get(name) is not None and not isinstance(record[name], str):
+                raise ValueError("Invalid reading text: " + name)
+    def metrics(record, names):
+        for name in names:
+            value = record.get(name)
+            if value is not None and (type(value) is not int or value < 0):
+                raise ValueError("Invalid reading metric: " + name)
+    def flags(record, names):
+        for name in names:
+            if name in record and type(record[name]) is not bool:
+                raise ValueError("Invalid reading flag: " + name)
+    graph, summary = report.get("graph", {}), report.get("reading_summary", {})
+    flags(report, ("inventory_complete",))
+    for record in (graph, summary):
+        flags(record, ("partial", "text_read_complete"))
+    for state in graph.get("states", {}).values():
+        text(state, ("kind",))
+    for edge in _list(graph.get("occurrences", [])):
+        if not isinstance(edge, dict):
+            raise ValueError("Invalid persisted occurrence")
+        text(edge, ("status", "scenario_id", "cwd", "source", "target_text", "classification", "condition"))
+        if any(not isinstance(value, str) for value in _list(edge.get("alternatives", []))):
+            raise ValueError("Invalid reading alternatives")
+    for scenario in scenarios:
+        text(scenario, ("scenario_id", "cwd", "environment_group_id"))
+        metrics(scenario, ("project_original_bytes", "project_included_bytes"))
+        flags(scenario, ("partial",))
+        global_source = scenario.get("global_source", {})
+        if not isinstance(global_source, dict):
+            raise ValueError("Invalid global loader source")
+        metrics(global_source, ("original_bytes", "included_bytes"))
+    metrics(summary, ("physical_text_files",))
+    directories = summary.get("directory_summaries_by_scenario", {})
+    if not isinstance(directories, dict):
+        raise ValueError("Invalid scenario directory summaries")
+    for paths in directories.values():
+        if not isinstance(paths, dict):
+            raise ValueError("Invalid directory summaries")
+        for values in paths.values():
+            if not isinstance(values, dict):
+                raise ValueError("Invalid directory summary")
+            metrics(values, ("unique_text_bytes", "physical_text_files"))
+            flags(values, ("lower_bound",))
+
+
 def _report_shape(report):
     """Validate persisted structures consumed by comparison/output routing."""
     if not isinstance(report, dict) or type(report.get("schema_version")) is not int or report["schema_version"] != 1:
@@ -120,6 +169,7 @@ def _report_shape(report):
     for name in ("unique_text_bytes", "occurrences"):
         value = summary.get(name)
         if value is not None and (type(value) is not int or value < 0): raise ValueError("Invalid reading metric")
+    _reading_shape(report, scenarios)
     for scenario in scenarios:
         for name in ("warning", "raw_volume_exceeds_budget"):
             if scenario.get(name) is not None and type(scenario[name]) is not bool:
@@ -381,9 +431,12 @@ def _reading_evidence(report, scenarios):
     lines = ["", "Reading measurements are the union of discovered guidance (including unselected or shadowed variants) "
              "and reachable conditional text across selected scenarios, not one session's load.",
              "Table cells encode literal text for Markdown. Search or copy raw paths and conditions from audit.json."]
-    lines += _table(("Environment group", "Cwd", "Scenario ID", "Loader original bytes", "Loader included bytes"),
+    lines += _table(("Environment group", "Cwd", "Scenario ID", "Project loader original bytes", "Project loader included bytes",
+                     "Global loader original bytes", "Global loader included bytes"),
                     [(chain.get("environment_group_id", ""), chain.get("cwd"), chain.get("scenario_id"),
-                      chain.get("project_original_bytes"), chain.get("project_included_bytes")) for chain in scenarios])
+                      chain.get("project_original_bytes"), chain.get("project_included_bytes"),
+                      chain.get("global_source", {}).get("original_bytes"),
+                      chain.get("global_source", {}).get("included_bytes")) for chain in scenarios])
     lines += _table(("Metric", "Measured value", "Status"),
                     [(label, summary.get(key), "unknown" if summary.get(key) is None
                       else "lower bound" if lower_bound else "complete") for label, key in (

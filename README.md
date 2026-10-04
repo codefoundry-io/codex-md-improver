@@ -58,7 +58,7 @@ The route stream is complete unless `--max-routes` truncates it; `route_limit_re
 and `audit.md` disclose that truncation.
 Original bytes, loader-charged bytes and linked reading volume are distinct metrics.
 Shared physical text is counted uniquely while all route identities are retained.
-The Markdown report shows loader values per scenario and separate known reading
+The Markdown report shows project and global loader values per scenario and separate known reading
 totals. Those totals union discovered guidance, including shadowed variants, and
 conditional linked text across scenarios; they are not one session's load.
 Unresolved references retain their cwd, source condition and base alternatives.
@@ -83,8 +83,12 @@ Recursive `**` glob components remain unresolved until a concrete source-bound
 decision is supplied. URLs, including `file:`, are inventoried without traversal.
 Plain paths in a `Reference` table column can inherit a conditional read directive
 from an enclosing `Read` or `Load` heading. Other columns, non-table prose, examples
-and output rows do not gain that intent from the heading. This bounded heuristic
-does not settle distinct document/project/cwd bases; justified resolutions still
+and output rows do not gain that intent from the heading. The classifier
+also treats output/example words in operation labels (such as `Create a release`
+or `Write tests`) as a veto; use an exact source-bound resolution and rescan when
+the instruction still requires that read. `Read`/`Load` must be followed by
+whitespace or the end of the heading, so `Load: guides` does not open this context.
+The heuristic does not settle distinct document/project/cwd bases; justified resolutions still
 require a rescan. Nested cwd scenarios can therefore retain unresolved links.
 POSIX filename bytes that cannot be UTF-8 encoded are escaped in reports; JSON
 preserves their filesystem representation, and normal Unicode stays unchanged.

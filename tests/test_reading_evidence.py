@@ -76,14 +76,14 @@ class ReadingReportV2(unittest.TestCase):
             self.assertEqual(matches[0]["Status"], status)
 
     def loader(self, rows, chain, group=""):
-        matches = [row for row in rows if "Loader original bytes" in row
+        matches = [row for row in rows if "Project loader original bytes" in row
                    and row.get("Scenario ID") == displayed(chain["scenario_id"])]
         self.assertEqual(len(matches), 1)
         row = matches[0]
         self.assertEqual(row["Cwd"], displayed(chain["cwd"]))
         self.assertEqual(row["Environment group"], displayed(group))
-        self.assertEqual(row["Loader original bytes"], str(chain["project_original_bytes"]))
-        self.assertEqual(row["Loader included bytes"], "unknown" if chain["project_included_bytes"] is None
+        self.assertEqual(row["Project loader original bytes"], str(chain["project_original_bytes"]))
+        self.assertEqual(row["Project loader included bytes"], "unknown" if chain["project_included_bytes"] is None
                          else str(chain["project_included_bytes"]))
 
     def test_complete_reading_and_distinct_loader_cwd_group_identity(self):

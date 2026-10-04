@@ -1,6 +1,6 @@
 # Question and linked-reading correction
 
-Updated: 2026-10-04. Base release: v0.1.0, merge09baa1d.
+Updated: 2026-10-04. Base release: v0.1.0, merge 09baa1d.
 The previous implementation log is historical; this record tracks the corrective
 [plan](../superpowers/plans/2026-10-04-question-linked-reading.md).
 
@@ -15,19 +15,19 @@ heading/column/fence boundaries, directory and unresolved rows, numeric lower bo
 intentional skill exclusion, hostile cell text and unchanged coverage semantics.
 Private first-RED fixtures remain preserved; public fixtures use neutral names.
 
-Initial GREEN passed23 focused cases and445 public methods. Independent code review
+Initial GREEN passed 23 focused cases and 445 public methods. Independent code review
 then found escaped-pipe column drift and missing-delimiter promotion. A new exact
 dedicated RED reproduced both before the bounded correction. Final fresh GREEN
-passed2 focused methods, the original8-case table suite, all447 public methods
+passed 2 focused methods, the original 8-case table suite, all 447 public methods
 (two platform skips on macOS), skill validation and applicable distribution checks.
 Source/test fingerprints and Git status stayed unchanged; exact fixtures were
 removed. Independent Sol/high re-review found no remaining actionable defect.
 
 The two skips require a native case-sensitive sibling fixture and native Linux
-bytes-name behavior. Local runtime was macOS/Python3.12.13. Remote supported-platform
+bytes-name behavior. Local runtime was macOS/Python 3.12.13. Remote supported-platform
 evidence belongs to the exact-commit CI check, not these local results.
 
-The current owner-selected AGENTS reproduction recognizes/resolves all10 direct
+The current owner-selected AGENTS reproduction recognizes/resolves all 10 direct
 policy references in the default .git marker scenario; the previous classifier left
 nine uncertain. Only the instruction file and direct metadata were read by that
 live probe. It does not attest recursive totals or hidden live configuration.
@@ -38,6 +38,27 @@ unavailable/rejected UI and empty closure. Original passing baselines remain
 passes. The empty-closed mismatch motivated the bounded recipe correction.
 These are observed hypothetical choices, not actual host UI rendering proof.
 
-Current remaining gates: exact-commit native CI and complete four-leg code review,
+Commit `48de5e8` passed all five native CI jobs. The first complete code round ended
+BLOCKED: Astra found an input-validation gap; Claude, Pro and Flash approved.
+All sessions terminated, integrity passed, and export/cleanup completed. Malformed
+persisted occurrences or directory summaries could previously raise AttributeError
+after output creation. The correction validates the newly consumed containers,
+nullable text/metrics and flags at the existing input boundary. Project/global
+loader columns now identify both existing quantities explicitly.
+
+Fresh dedicated RED observed 53 input assertion failures and three missing-column
+failures; valid sparse/null and existing heading controls passed. After the root
+fix, a separate fresh dedicated GREEN passed all eight focused methods, all 455
+public methods (two platform skips), validator and distribution checks. Inputs and
+source/test/status fingerprints stayed unchanged, and exact fixtures were removed.
+Independent Sol/high re-review found no concrete remaining defect.
+
+Full punctuation encoding and complete scenario rows retain the admitted contract.
+The pre-existing explicit Read-column escaped-pipe defect remains recorded for a
+separate scope; this patch corrects the new Reference fallback. Conservative
+operation-label vetoes are now documented in README. No further question wording
+change or repeated choice simulation was needed.
+
+Current remaining gates: corrected-commit native CI and a fresh four-leg code review,
 then concrete final merge approval. Release and replacing the installed v0.1.0
 copy require their separate approvals; neither is performed by source validation.

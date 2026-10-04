@@ -18,7 +18,7 @@ contract. Keep loader charges, graph arithmetic, trust and verdict aggregation.
    fences, non-read later headings, examples/output, other columns, escaped-pipe
    column shifts and rows without a matching Markdown table delimiter. Preserve
    the existing explicit Read-column rule and plain-path base ambiguity.
-3. Show existing reading measurements in audit.md: loader bytes per scenario,
+3. Show existing reading measurements in audit.md: project/global loader bytes per scenario,
    known unique reachable text bytes/files, unresolved occurrences and alternatives,
    directory summaries and LIMITED/excluded_skill state counts. Include scenario,
    cwd and environment-group identity. Numeric lower bounds follow graph/text,
@@ -31,6 +31,10 @@ contract. Keep loader charges, graph arithmetic, trust and verdict aggregation.
 5. Explain that byte comparisons need both targets rescanned by the same analyzer.
    Without the older target state and matching analyzer provenance, byte changes
    are non-attributable. Keep comparison schemas and accepted verdict aggregation.
+6. Validate the newly consumed persisted reading containers and field types before
+   report output is created. Preserve absent-field defaults, empty/null displayed
+   text, nullable nonnegative integer metrics, zero values and extra record fields.
+   Do not add enums, path restrictions or new graph arithmetic.
 
 ## Verification and sequence
 
@@ -53,11 +57,12 @@ checkout and intentional unrelated changes; installed v0.1.0 remains a consumer.
 
 ## Size and limits
 
-Estimate: Python +100–200/-5–20, net +80–195; novel core about70–130 lines.
-Current implementation: Python +122/-0, net+122 across two modules. Skill/reference
-guidance +21/-0. Tests/fixtures +759/-0, including41 lines for the independently
-found column/delimiter defects; that small growth serves the same admitted outcome.
-README, this plan and status records are separate documentation.
+Initial estimate: Python +100–200/-5–20, net +80–195; novel core about 70–130 lines.
+After code review: Python +175/-0, net +175 across two modules, with about 170 lines
+of new core logic. Skill/reference guidance +21/-0. Tests/fixtures +947/-0 include
+41 lines for column/delimiter defects and 188 for persisted-input, global-loader
+and heading controls. Growth serves the same outcome: safe, complete presentation
+of existing reading evidence. README, this plan and status records are separate.
 
 The current instruction-file excerpt supplies reproducible evidence; no claim is
 made about an unavailable prior invocation. Direct-file metadata is not recursive
