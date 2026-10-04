@@ -40,7 +40,7 @@ def _assessment_command(args):
         def read(path, content=None):
             if not path:
                 raise ValueError("Missing report input argument")
-            data = content.read(Path(path)) if content else Path(path).read_bytes()
+            data = content.read_control(Path(path)) if content else Path(path).read_bytes()
             value = json.loads(data)
             if not isinstance(value, dict):
                 raise ValueError("Report inputs must be objects")
@@ -214,7 +214,7 @@ def main(argv=None):
         validate_request(request)
         content = _Content()
         content.metadata_only(settings.get("metadata_only_paths", []))
-        resolutions = json.loads(content.read(Path(args.resolutions))) if args.resolutions else []
+        resolutions = json.loads(content.read_control(Path(args.resolutions))) if args.resolutions else []
         if not isinstance(resolutions, list):
             raise ValueError("Resolutions must be a list")
         home, _ = _home(request)

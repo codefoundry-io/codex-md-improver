@@ -25,13 +25,25 @@ checks and the skill validator. Source/test fingerprints and dirty state remaine
 unchanged; its exact disposable fixture was removed. Public test transfer changes
 only module names/import setup, preserving the frozen assertions.
 
+Code review R1 found an absent declared global override incorrectly preventing
+fallback, a directory admitted as a conditional fallback, and streamed secondary
+JSON input regressions. Dedicated RED reproduced all three classes. The corrections
+preserve known-absent fallback and pipe input while enforcing the same read boundary.
+One new assessment-pipe test oracle was corrected to expect a finished partial
+report (exit 3); the original failing oracle is retained in private evidence.
+
+Fresh dedicated R2 GREEN passed 35 focused methods and 492 public methods
+(490 passed, two macOS platform skips), including all 10 distribution methods.
+The validator passed; source, private tests and Git state remained unchanged,
+and the exact temporary fixture was removed.
+
 Two fresh Sol/medium/fork-none choices matched sealed expectations: enforce the
 file restriction and continue partial analysis without a lifting question;
 use the parent's selectable question UI for a genuinely ambiguous base. These
 are decision simulations, not end-to-end question delivery proof. The same skill
 and handoff bytes were used in the dedicated GREEN.
 
-Production delta is +269/-29, net +240 across four modules; tests add 560 lines.
+Production delta is +278/-29, net +249 across four modules; tests add 657 lines.
 The retained-identity and report cache checks belong to the same boundary outcome.
 Exact-commit native CI and the required all-four-leg code decision are recorded
 with [PR #2](https://github.com/codefoundry-io/codex-md-improver/pull/2) and the

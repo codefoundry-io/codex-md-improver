@@ -476,6 +476,11 @@ class _Content:
         info = path.stat()
         return [info.st_dev, info.st_ino]
 
+    def read_control(self, path):
+        """Guard secondary JSON while retaining legacy pipe/stdin support."""
+        self.check_metadata(path)
+        return path.read_bytes()
+
     def read(self, path):
         try:
             before = path.stat()
@@ -518,6 +523,8 @@ def _global(request, content):
         path = home / name
         try:
             if path in content.metadata_paths:
+                if metadata_file(path)["status"] == "missing":
+                    continue
                 content.check_metadata(path)
             if not stat.S_ISREG(path.stat().st_mode):
                 continue
@@ -534,7 +541,9 @@ def _global(request, content):
             conditional = []
             if name == "AGENTS.override.md":
                 fallback = home / "AGENTS.md"
-                if metadata_file(fallback)["status"] not in {"missing", "nonregular"}:
+                row = metadata_file(fallback)
+                if (row["status"] == "regular_file" or
+                        row["status"] == "unavailable" and row["physical_identity"] is None):
                     conditional.append({"path": str(fallback), "condition": "if global override is empty"})
             return {"path": str(path), **policy_fields(error), "included_bytes": None,
                     "state": "metadata_only", "warnings": warnings, "home_origin": origin,
