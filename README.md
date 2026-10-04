@@ -53,6 +53,26 @@ Modeled trust lookup separately follows the pinned Codex path normalization.
 Git trust metadata uses the pinned ASCII whitespace rules; VT remains a literal
 path character. NUL-bearing metadata supplies no trust fallback.
 
+For existing metadata-only file restrictions, preflight governing instructions
+before scanning and pass established absolute literal paths in settings:
+
+```json
+{"metadata_only_paths": ["/absolute/project/docs/hold.md"]}
+```
+
+The auditor excludes bodies/hashes through direct, symbolic and hardlink aliases,
+continues permitted work, and reports stat sizes separately from readable text.
+Missing/inaccessible declarations and unknown descendants remain explicit.
+Policy-refused reads make coverage partial; even an all-body-blocked scan emits
+a finished partial report with exit 3. Unknown declaration identity blocks body
+reads across the scan until resolved; this is a stable-filesystem application
+guard, not a concurrent-race sandbox. Do not lift a prohibition merely to count
+bytes. Newly discovered boundaries require a fresh scan before enrichment.
+See the [metadata contract](skills/codex-md-improver/references/assessment-format.md#metadata-only-files).
+Settings, audit and comparison inputs are host-authorized control artifacts outside
+prohibited targets. The CLI restores persisted policy for secondary inputs and
+evidence reads. Changed declaration sets make report byte deltas non-comparable.
+
 The scan writes `audit.json`, `audit.md`, `routes.jsonl` and `manifest.json`.
 The route stream is complete unless `--max-routes` truncates it; `route_limit_reached`
 and `audit.md` disclose that truncation.
@@ -166,7 +186,7 @@ top-level skill invocation remain UNOBSERVED. A leader-dispatched child run and
 parent rescan establish only their bounded observations; child-reported tool use
 or non-following remains unverified without an independently exposed trace.
 Current verification and release boundaries are recorded in the
-[Luna workflow status](docs/status/2026-10-04-luna-file-inference.md).
+[current metadata-only fix status](docs/status/2026-10-04-metadata-only.md).
 
 ## Controlled choice checks
 

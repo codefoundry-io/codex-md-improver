@@ -1,6 +1,7 @@
 """Read-only, explicitly hypothetical instruction loader and scope inventory."""
 from dataclasses import asdict, dataclass, field
 import hashlib
+import errno
 import json
 import os
 from pathlib import Path
@@ -113,7 +114,8 @@ def validate_request(request):
         raise ValueError("--cwd requires one containing project")
     obj = request.settings
     _mapping(obj, {"schema_version", "client", "non_project", "trust", "session_overrides",
-                   "environment_groups", "declared_bases"}, "settings")
+                   "environment_groups", "declared_bases", "metadata_only_paths"}, "settings")
+    validate_metadata_paths(obj.get("metadata_only_paths", []), inspect=True)
     if "schema_version" in obj and (type(obj["schema_version"]) is not int or obj["schema_version"] != 1):
         raise ValueError("Unsupported settings version")
     for key in ("non_project", "session_overrides"):
@@ -368,11 +370,99 @@ def resolve_settings(request: ScopeRequest, cwd: Path, *, content=None) -> Loade
                                       "live_runtime_attested": False}, unresolved=sorted(set(problems)))
 
 
+def validate_metadata_paths(values, *, inspect=False):
+    """Validate persisted syntax independently of current filesystem availability."""
+    if not isinstance(values, list) or any(
+            not isinstance(p, str) or not Path(p).is_absolute() or ".." in Path(p).parts
+            or any(c in p for c in ("\0", "*", "?", "[", "]")) for p in values):
+        raise ValueError("metadata_only_paths requires absolute literal file paths")
+    paths = sorted({Path(p) for p in values})
+    if inspect:
+        for path in paths:
+            try:
+                directory = stat.S_ISDIR(path.stat().st_mode)
+            except (OSError, RuntimeError):
+                continue
+            if directory:
+                raise ValueError("metadata_only_paths cannot declare a directory")
+    return paths
+
+
+def metadata_file(path):
+    """Stat only: never open a declaration, including inaccessible or special files."""
+    row = {"path": str(path), "status": "unavailable", "reason": "unresolved_metadata_identity",
+           "metadata_bytes": None, "physical_identity": None}
+    try:
+        info = path.stat()
+        row["physical_identity"] = [info.st_dev, info.st_ino]
+        if stat.S_ISREG(info.st_mode):
+            row.update(status="regular_file", reason="metadata_only", metadata_bytes=info.st_size)
+        elif not stat.S_ISDIR(info.st_mode):
+            row.update(status="nonregular", reason="nonregular_file")
+    except (OSError, RuntimeError) as error:
+        row["metadata_error"] = type(error).__name__
+        if isinstance(error, OSError) and error.errno in (errno.ENOENT, errno.ENOTDIR):
+            row.update(status="missing", reason="not_found")
+    return row
+
+
+class MetadataOnlyError(PermissionError):
+    reason = "metadata_only"
+
+    def __init__(self, path):
+        super().__init__(self.reason + ": " + str(path))
+        self.metadata = metadata_file(path)
+
+
+class MetadataIdentityError(MetadataOnlyError):
+    reason = "unresolved_metadata_identity"
+
+
+def policy_fields(error):
+    return {"metadata_bytes": error.metadata["metadata_bytes"],
+            "read_reason": error.reason, "original_bytes": None, "sha256": None}
+
+
 class _Content:
     def __init__(self):
         self.cache = {}
         self.denied_identities = set()
         self.denied_paths = set()
+        self.metadata_paths = set()
+        self.metadata_resolved = set()
+        self.metadata_identities = set()
+        self.metadata_rows = []
+        self.policy_refused = False
+
+    def metadata_only(self, paths, *, inspect=False):
+        self.metadata_paths.update(validate_metadata_paths(paths, inspect=inspect))
+        self.refresh_metadata()
+
+    def refresh_metadata(self):
+        self.metadata_rows = [metadata_file(p) for p in sorted(self.metadata_paths)]
+        for path, row in zip(sorted(self.metadata_paths), self.metadata_rows):
+            if row["physical_identity"] is not None:
+                self.metadata_identities.add(tuple(row["physical_identity"]))
+            try:
+                self.metadata_resolved.add(path.resolve())
+            except (OSError, RuntimeError):
+                pass
+
+    def check_metadata(self, path):
+        if not self.metadata_paths and not self.metadata_identities:
+            return
+        self.refresh_metadata()
+        matched = path in self.metadata_paths or path in self.metadata_resolved
+        try:
+            matched |= path.resolve() in self.metadata_resolved
+            matched |= tuple(self.identity(path)) in self.metadata_identities
+        except (OSError, RuntimeError):
+            pass
+        error = MetadataOnlyError if matched else MetadataIdentityError if any(
+            row["status"] == "unavailable" for row in self.metadata_rows) else None
+        if error:
+            self.policy_refused = True
+            raise error(path)
 
     def deny(self, paths):
         for path in paths:
@@ -387,7 +477,13 @@ class _Content:
         return [info.st_dev, info.st_ino]
 
     def read(self, path):
-        before = path.stat()
+        try:
+            before = path.stat()
+        except OSError:
+            if path in self.metadata_paths:
+                self.check_metadata(path)
+            raise
+        self.check_metadata(path)
         identity = (before.st_dev, before.st_ino)
         if identity in self.denied_identities or path.resolve() in self.denied_paths:
             raise PermissionError("known sensitive source excluded")
@@ -409,6 +505,7 @@ class _Content:
 
 def _protected_content(request, content=None):
     content = content or _Content()
+    content.metadata_only(request.settings.get("metadata_only_paths", []))
     home, _ = _home(request)
     content.deny([Path.home() / p for p in _POLICY["known_sensitive_paths"]] + [home / "auth.json"])
     return content
@@ -420,6 +517,8 @@ def _global(request, content):
     for name in ("AGENTS.override.md", "AGENTS.md"):
         path = home / name
         try:
+            if path in content.metadata_paths:
+                content.check_metadata(path)
             if not stat.S_ISREG(path.stat().st_mode):
                 continue
             data = content.read(path)
@@ -428,6 +527,18 @@ def _global(request, content):
                 return {"path": str(path), "original_bytes": len(data), "included_bytes": len(decoded.encode()),
                         "sha256": hashlib.sha256(data).hexdigest(), "physical_identity": content.identity(path),
                         "state": "selected", "warnings": warnings, "home_origin": origin}
+        except MetadataOnlyError as error:
+            warnings.append({"path": str(path), "error": type(error).__name__, "reason": error.reason})
+            if error.metadata["metadata_bytes"] == 0:
+                continue
+            conditional = []
+            if name == "AGENTS.override.md":
+                fallback = home / "AGENTS.md"
+                if metadata_file(fallback)["status"] not in {"missing", "nonregular"}:
+                    conditional.append({"path": str(fallback), "condition": "if global override is empty"})
+            return {"path": str(path), **policy_fields(error), "included_bytes": None,
+                    "state": "metadata_only", "warnings": warnings, "home_origin": origin,
+                    "conditional_sources": conditional}
         except FileNotFoundError:
             continue
         except OSError as error:
@@ -436,7 +547,7 @@ def _global(request, content):
             "state": "cache_unknown" if warnings else "absent", "warnings": warnings, "home_origin": origin}
 
 
-def _selected(cwd, settings):
+def _selected(cwd, settings, content):
     if settings.root_markers is None or settings.fallback_names is None:
         return cwd, [], "unknown_discovery_settings"
     root = _marker_root(cwd, settings.root_markers)
@@ -452,6 +563,11 @@ def _selected(cwd, settings):
                         break
                 except FileNotFoundError:
                     continue
+                except OSError:
+                    if path not in content.metadata_paths:
+                        raise
+                    paths.append(path)
+                    break
     except OSError as error:
         return root, paths, type(error).__name__
     return root, paths, None
@@ -469,12 +585,13 @@ def _volume_flags(original, limit):
 
 def _chain(cwd, inventory_root, settings, global_source, content, remaining=_INDEPENDENT_BUDGET, *, scope_error=None):
     budget = settings.limit if remaining is _INDEPENDENT_BUDGET else remaining
-    root, paths, discovery_error = (cwd, [], scope_error) if scope_error else _selected(cwd, settings)
+    root, paths, discovery_error = (cwd, [], scope_error) if scope_error else _selected(cwd, settings, content)
     sources, volume = [], 0
     for path in paths:
         record = {"path": str(path), "original_bytes": None, "sha256": None, "read_error": None,
                   "raw_retained_bytes": 0, "included_bytes": 0, "omission": None}
         try:
+            content.check_metadata(path)
             record["original_bytes"] = path.stat().st_size
             volume += record["original_bytes"]
             data = content.read(path)
@@ -482,6 +599,8 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
             record["physical_identity"] = content.identity(path)
         except OSError as error:
             record["read_error"] = type(error).__name__
+            if isinstance(error, MetadataOnlyError):
+                record.update(policy_fields(error))
         sources.append(record)
     gate = settings.trust == "untrusted" or settings.limit == 0
     exhausted = not gate and budget == 0
@@ -502,7 +621,7 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
                 continue
             if source["read_error"]:
                 included = charged = None
-                outcome = "environment_read_error"
+                outcome = "unresolved" if source.get("read_reason") else "environment_read_error"
                 break
             try:
                 data = content.read(Path(source["path"]))[:available]
@@ -510,6 +629,9 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
                 source["read_error"] = type(error).__name__
                 included = charged = None
                 outcome = "environment_read_error"
+                if isinstance(error, MetadataOnlyError):
+                    source.update(policy_fields(error))
+                    outcome = "unresolved"
                 break
             text = data.decode("utf-8", errors="replace")
             if not text.strip(WHITE_SPACE):
@@ -536,7 +658,8 @@ def _chain(cwd, inventory_root, settings, global_source, content, remaining=_IND
         except FileNotFoundError:
             continue
         except OSError as error:
-            scope_sources.append({"path": str(path), "sha256": None, "error": type(error).__name__})
+            scope_sources.append({"path": str(path), "sha256": None, "error": type(error).__name__,
+                                  **(policy_fields(error) if isinstance(error, MetadataOnlyError) else {})})
     record = {"scenario_id": hashlib.sha256(json.dumps([str(inventory_root), str(cwd)]).encode()).hexdigest()[:16], "cwd": str(cwd),
               "scenario_project_root": str(root), "inventory_root": str(inventory_root), "settings": asdict(settings),
               "sources": sources, "scope_sources": scope_sources, "global_source": {} if scope_error else global_source, "project_original_bytes": original,
@@ -696,6 +819,7 @@ def scan(request: ScopeRequest, *, content=None, excluded_paths=()) -> dict:
                 ["assembled"] if known else ["unresolved"]})
     partial = any(row["partial"] for row in chains) or any(f["kind"] in ("blocked", "outside_scope") for f in frontiers)
     partial |= any(member["partial"] for group in groups for member in group["members"])
+    partial |= content.policy_refused
     findings = any(row["warning"] or row["raw_volume_exceeds_budget"] for row in
                    [*chains, *groups, *(member for group in groups for member in group["members"])])
     scenarios = [*chains, *(member for group in groups for member in group["members"])]
@@ -703,7 +827,8 @@ def scan(request: ScopeRequest, *, content=None, excluded_paths=()) -> dict:
                  for source in [*row["sources"], *row["scope_sources"]])
     home, origin = _home(request)
     return {"schema_version": 1, "chains": chains, "groups": groups, "frontiers": frontiers,
-            "partial": bool(partial), "exit_code": 2 if not usable else 3 if partial else 1 if findings else 0,
+            "partial": bool(partial), "exit_code": 2 if not usable and not content.policy_refused else 3 if partial else 1 if findings else 0,
+            **({"metadata_only_files": content.metadata_rows} if "metadata_only_paths" in request.settings else {}),
             "scope": {"projects": [str(p) for p in request.projects], "cwd": str(request.cwd) if request.cwd else None,
                       "codex_home": str(home), "codex_home_origin": origin, "settings": request.settings},
             "inventory_complete": not any(f["kind"] in ("blocked", "outside_scope") for f in frontiers),

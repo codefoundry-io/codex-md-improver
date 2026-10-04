@@ -31,10 +31,21 @@ once in the final response. Resolve dependent work only from the human's answer.
    only for an output-location decision (operational exit 2); do not broaden reads
    or alter permissions. In-target output requires explicit owner consent and
    `--allow-output-in-target`. Never reuse an existing output directory.
-3. Apply established read exclusions before any scan using the
+3. Before recursive scanning, inventory relevant guidance paths using permitted
+   metadata and read permitted governing instructions incrementally for every
+   selected project/scenario, including applicable linked guidance. Apply each
+   discovered boundary before reading further bodies. Use the fresh Luna/high
+   file-inference worker for inferred file lists and existence/type checks; the
+   parent corroborates metadata and registers known literal file restrictions in
+   settings `metadata_only_paths` using the
    [file-inference handoff](references/assessment-format.md#required-file-inference-handoff).
-   If the requested scope cannot honor a boundary through supported inputs, report
-   it blocked/incomplete. Run the bundled analyzer with its absolute script path:
+   Keep required-read intent; do not replace a file restriction with one uncertain
+   occurrence. Continue permitted analysis and report excluded file stat sizes
+   separately from readable text totals and unknown descendant references.
+   Do not ask to lift an explicit prohibition just to finish byte accounting.
+   Broader or ambiguous restrictions unsupported by this interface leave the
+   affected scope blocked; continue demonstrably independent permitted work.
+   Run the bundled analyzer with its absolute script path:
 
    ```sh
    python3 -B "$SKILL_DIR/scripts/md_improver.py" scan --project "$PROJECT" --codex-home "$CODEX_HOME_PATH" --out "$SCAN_OUT"
@@ -53,7 +64,9 @@ once in the final response. Resolve dependent work only from the human's answer.
    For settings or uncertain/unresolved references, use the
    [scan input contracts](references/assessment-format.md#scan-settings-input).
    Bind justified occurrence decisions to the exact source/hash/span/text and
-   rescan the same scope into a new output directory. Verify terminal routes;
+   rescan the same scope into a new output directory. If new governing instructions
+   reveal a boundary, repeat preflight and rescan with the updated policy before
+   enrichment; an older scan cannot be claimed retrospectively safe. Verify terminal routes;
    unresolved intent stays partial and needs a decision, not an invented target.
 4. Delegate instruction-to-file-list inference and direct existence checks to
    fresh Luna/high children with `fork_turns="none"`, using the
@@ -72,6 +85,10 @@ once in the final response. Resolve dependent work only from the human's answer.
    [assessment-format.md](references/assessment-format.md). Bind the actual scan
    JSON byte hash and exact source spans.
    Record findings, reviewed sources, judgments and exact proposed replacements.
+   The settings file, input audit and comparison reports must be authorized control
+   artifacts outside prohibited targets. After loading that policy, the CLI also
+   guards secondary resolutions/assessment inputs. Never enrich an older audit
+   whose declarations omit a newly established restriction.
    Global/project moves, semantic conflicts, possibly intentional duplicates and
    new destinations need owner decisions before any target change. Show both
    source locations, effects and alternatives; leave unresolved choices visible.

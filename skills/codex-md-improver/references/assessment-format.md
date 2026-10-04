@@ -129,6 +129,55 @@ Optional fields (unknown top-level fields are rejected):
 | `trust` | Object mapping absolute lookup paths to `trusted`, `untrusted`, `unset`, or `unknown`; supply actual facts, not desired outcomes |
 | `declared_bases` | Object mapping absolute source aliases to reference-base objects below |
 | `environment_groups` | Ordered groups with explicit effective loader settings, described below |
+| `metadata_only_paths` | Absolute literal file paths whose bodies/hashes must not be read; no directories, parent traversal, NUL or glob syntax |
+
+### Metadata-only files
+
+Establish declarations from existing owner/instruction boundaries before scanning,
+for example `{"metadata_only_paths":["/absolute/project/docs/hold.md"]}`.
+An absent or empty list preserves ordinary behavior. Missing, broken-link and
+inaccessible declarations remain recorded. Direct, symlink and hardlink aliases
+are excluded before body access or cache reuse. The reader refreshes declaration
+metadata before reads and retains observed identities across replacement/retargeting.
+If a declaration's identity cannot be resolved (including EACCES or ELOOP), all
+prospective target body reads are blocked with `unresolved_metadata_identity`;
+there is no device/root exemption. Missing ENOENT/ENOTDIR paths remain excluded
+by name and are refreshed for later creation. This is an application guard for
+a stable filesystem, not OS isolation against concurrent adversarial races.
+
+`metadata_only_files` rows contain `path`, `status`, `reason`,
+`metadata_bytes` and `physical_identity`, plus optional `metadata_error`.
+Status/reason pairs are `regular_file/metadata_only`, `missing/not_found`,
+`unavailable/unresolved_metadata_identity`, and `nonregular/nonregular_file`.
+Only regular-file stat sizes are nonnegative integers; other sizes are null.
+Identity is a device/inode pair or null. Do not sum aliases' metadata sizes.
+
+Reached exclusions produce `excluded_metadata_only` graph terminals with
+`bytes=null`, separate `metadata_bytes`, and `reason=metadata_only`.
+Unresolved identities use `blocked_frontier` with an explicit reason; routes
+carry `terminal_reason` and `terminal_metadata_bytes` where known.
+These frontiers make text/directory/route totals lower bounds. The generic route
+`content_status=metadata_only` also describes other unread terminals and is not
+a policy identifier.
+
+A policy refusal is not proof of a Codex runtime I/O failure. Denied selected
+guidance leaves modeled loading unresolved and `modeled_loader_error=null`,
+while independent known zero/untrusted gates still contribute zero. A denied
+global override leaves a permitted fallback conditional, without selecting or
+charging it; zero stat bytes can establish emptiness. Any actual policy refusal
+makes coverage partial, even if supplied loader settings restore known fields.
+All-body-blocked scans still finish with exit 3 and an incomplete manifest.
+An unreached declaration alone does not make coverage partial.
+
+Settings, input audit and comparison files must be authorized control artifacts
+outside prohibited targets. Once loaded, the policy guards secondary resolutions,
+assessment and report evidence reads. Enrichment retains validated scan-observed
+identities and refreshes declarations, protecting aliases after an ordinary rename.
+This uses persisted policy, not authenticated policy: removing that policy from a
+forged report is outside the claim. If a new boundary is discovered, rescan first.
+Historical rendering/comparison validates shapes without statting target files.
+Declaration order/duplicates do not change scope; changed declaration sets make
+comparison non-comparable and suppress numeric deltas.
 
 Loader-field objects accept only `limit`, `fallback_names` and `root_markers`.
 `limit` is a nonnegative integer or null. The other two fields are ordered arrays
@@ -328,12 +377,19 @@ base alternatives even when only one candidate exists. The transport supports on
 target per source/span/scenario; do not invent spans or use an unrelated directory
 to encode multiple possible files or a required set the transport cannot represent.
 
-Established local read exclusions also apply before the initial scan and every
-rescan. Retain their required-read intent, boundary evidence and pending owner
-question separately; encode blocked aliases as source-bound `uncertain` before
-traversal. The CLI does not enforce arbitrary worker metadata boundaries. If the
-required scan scope cannot honor a declared boundary through supported inputs,
-report blocked/incomplete; do not run it or silently narrow scope.
+Established read exclusions apply before the initial scan and every rescan.
+Inventory guidance paths using permitted metadata, then inspect permitted governing
+instructions incrementally, including applicable linked guidance. Workers infer
+file lists and check permitted existence/type; the parent corroborates and
+registers literal file restrictions in `metadata_only_paths` before traversal.
+Preserve required-read intent and boundary evidence; an uncertain occurrence alone
+does not enforce a file restriction across aliases or other read phases. Do not
+ask to lift an explicit prohibition solely for byte accounting. Broader/ambiguous
+restrictions unsupported by the file interface leave the affected scope blocked;
+continue demonstrably independent permitted work without silently narrowing scope.
+Repeat preflight and rescan into a fresh output when newly reached guidance reveals
+another restriction. Do not enrich an older scan or claim retrospective protection.
+Genuine semantic choices still use the parent's selectable question interface.
 
 Rescan the same scope into a new permitted output. Only the scanner computes text
 bytes, physical deduplication and frontiers; never insert child totals or stat sizes.

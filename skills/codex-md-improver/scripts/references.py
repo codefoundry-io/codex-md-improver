@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import stat
 from urllib.parse import unquote
-from discovery import _Content, _POLICY, canonical, audit_source_boundary, validate_reference_base
+from discovery import _Content, _POLICY, canonical, audit_source_boundary, validate_reference_base, MetadataOnlyError
 
 
 class InvalidOutputLocation(ValueError):
@@ -16,7 +16,7 @@ class InvalidOutputLocation(ValueError):
 
 
 LIMITED = {"blocked_frontier", "missing_target", "unresolved", "excluded_sensitive",
-           "excluded_git", "binary", "undecodable", "special_file", "changed_during_read"}
+           "excluded_git", "excluded_metadata_only", "binary", "undecodable", "special_file", "changed_during_read"}
 NON_READ = {"informational", "example", "output"}
 CONFIG_NAMES = {".env", ".npmrc", ".pgpass", ".netrc", ".pypirc", ".gitignore",
                 ".gitattributes", ".dockerignore", ".editorconfig", ".yarnrc"}
@@ -412,6 +412,8 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
              "directory_totals": {}, "boundaries": [], "text_read_complete": True,
              "semantic_review_complete": False, "_chains": chains}
     content = context.get("content") or _Content()
+    content.metadata_only(context.get("metadata_only_paths", []), inspect=True)
+    graph["root_conditions"] = {}
     texts, consumed, directories = {}, set(), set()
     home = Path(context.get("user_home", Path.home()))
     codex_home = Path(context.get("codex_home", home / ".codex"))
@@ -456,12 +458,23 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             graph["partial"], graph["text_read_complete"] = True, False
         return key
 
+    def policy_terminal(chain, path, error):
+        kind = "excluded_metadata_only" if error.reason == "metadata_only" else "blocked_frontier"
+        identity = error.metadata["physical_identity"]
+        key = terminal(chain, path, kind, identity=":".join(map(str, identity)) if identity else None)
+        graph["states"][key].update(bytes=None, metadata_bytes=error.metadata["metadata_bytes"],
+                                    reason=error.reason)
+        return key
+
     def visit(path, chain, ancestors, direct=True):
         path = _absolute_reference(path)
         key = state_key(chain, path)
         try:
+            content.check_metadata(path)
             info = path.stat()
             real = canonical(path)
+        except MetadataOnlyError as error:
+            return policy_terminal(chain, path, error)
         except FileNotFoundError:
             return terminal(chain, path, "missing_target")
         except OSError:
@@ -522,6 +535,8 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
         if identity not in graph["nodes"]:
             try:
                 data = content.read(path)
+            except MetadataOnlyError as error:
+                return policy_terminal(chain, path, error)
             except OSError as error:
                 kind = "changed_during_read" if "changed during" in str(error) else "blocked_frontier"
                 return terminal(chain, path, kind, info, identity)
@@ -539,7 +554,8 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             node["aliases"].append(str(path))
         text = texts[identity]
         terminal(chain, path, "leaf", info, identity)
-        guidance = {s["path"] for s in [chain.get("global_source", {}), *chain["sources"], *chain.get("scope_sources", [])] if s.get("path")}
+        guidance = {s["path"] for s in [chain.get("global_source", {}), *chain["sources"], *chain.get("scope_sources", []),
+                                                 *chain.get("global_source", {}).get("conditional_sources", [])] if s.get("path")}
         candidates = _lex(text, path, document_kind(path, str(path) in guidance))
         explicit_targets = set()
         for index, resolution in enumerate(resolutions):
@@ -596,8 +612,14 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
         return key
 
     for chain in chains:
-        sources = [s["path"] for s in [chain.get("global_source", {}), *chain["sources"], *chain.get("scope_sources", [])] if s.get("path")]
+        sources = [s["path"] for s in [chain.get("global_source", {}), *chain["sources"], *chain.get("scope_sources", []),
+                                                 *chain.get("global_source", {}).get("conditional_sources", [])] if s.get("path")]
         graph["roots"][chain["scenario_id"]] = []
+        definite = {s["path"] for s in [chain.get("global_source", {}), *chain["sources"],
+                                       *chain.get("scope_sources", [])] if s.get("path")}
+        for item in chain.get("global_source", {}).get("conditional_sources", []):
+            if item["path"] not in definite:
+                graph["root_conditions"][state_key(chain, Path(item["path"]))] = [item["condition"]]
         for source in dict.fromkeys(sources):
             key = visit(Path(source), chain, set())
             if key:
@@ -639,7 +661,8 @@ def refresh_directory_summaries(graph):
             if row["identity"] in graph["nodes"]:
                 ids.add(row["identity"])
             if row["kind"] in LIMITED or row["kind"] == "excluded_skill":
-                record(frontiers, {"scenario_id": scenario, "path": row["path"], "kind": row["kind"]})
+                record(frontiers, {"scenario_id": scenario, "path": row["path"], "kind": row["kind"],
+                                   **({"reason": row["reason"]} if "reason" in row else {})})
             for edge in row["children"]:
                 evidence = condition(row, edge, scenario)
                 record(conditions, evidence)
@@ -695,6 +718,8 @@ def iter_terminal_paths(graph, chain):
                 "scenario_project_root": chain["scenario_project_root"], "loader_sources": loaded,
                 "originating_instruction_file": origin, "route": route, "conditions": conditions,
                 "terminal_path": node["path"], "terminal_kind": kind, "terminal_bytes": node["bytes"],
+                **({"terminal_reason": node["reason"]} if "reason" in node else {}),
+                **({"terminal_metadata_bytes": node["metadata_bytes"]} if "metadata_bytes" in node else {}),
                 "route_original_bytes": total,
                 "lower_bound": prefix_incomplete or kind in LIMITED or kind == "excluded_skill",
                 "content_status": "read" if node["identity"] in graph["nodes"] else "metadata_only",
@@ -721,7 +746,8 @@ def iter_terminal_paths(graph, chain):
                 yield from walk(edge["state"], current, [*conditions, edge["condition"]],
                                 ancestors | {identity}, counted, total, origin)
     for root in graph["roots"].get(chain["scenario_id"], []):
-        yield from walk(root, [], [], set(), initial_ids, initial_total, graph["states"][root]["path"])
+        yield from walk(root, [], graph.get("root_conditions", {}).get(root, []), set(),
+                        initial_ids, initial_total, graph["states"][root]["path"])
 
 
 def summarize_reading_paths(graph):

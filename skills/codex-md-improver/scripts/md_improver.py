@@ -32,22 +32,23 @@ def _write_json(path, value):
 
 def _assessment_command(args):
     from path_identity import canonical, canonical_missing
-    from reporting import enrich_audit, compare_reports, render_audit, _report_shape
+    from reporting import enrich_audit, compare_reports, render_audit, _report_shape, _report_content
     out = None
     created = False
     manifest = {"complete": False, "phase": "starting", "owned": ["manifest.json"]}
     try:
-        def read(path):
+        def read(path, content=None):
             if not path:
                 raise ValueError("Missing report input argument")
-            data = Path(path).read_bytes()
+            data = content.read(Path(path)) if content else Path(path).read_bytes()
             value = json.loads(data)
             if not isinstance(value, dict):
                 raise ValueError("Report inputs must be objects")
             return value, hashlib.sha256(data).hexdigest()
         if args.command == "report":
             audit, digest = read(args.audit)
-            assessment, _ = read(args.assessment)
+            _report_shape(audit)
+            assessment, _ = read(args.assessment, _report_content(audit, sensitive=False))
             inputs = [audit]
         else:
             before, digest = read(args.before)
@@ -91,17 +92,19 @@ def _assessment_command(args):
 
 
 def _candidate_records(graph, scenarios, content, selected):
-    from discovery import canonical, audit_source_boundary
+    from discovery import canonical, audit_source_boundary, MetadataOnlyError
     from lint_candidates import find_candidates
     from references import document_kind, refresh_directory_summaries
     loaded = {source["path"] for c in scenarios for source in [*c.get("sources", []), *c.get("scope_sources", [])]}
     loaded |= {c["global_source"]["path"] for c in scenarios if c.get("global_source", {}).get("path")}
-    result = []
+    loaded |= {s["path"] for c in scenarios for s in c.get("global_source", {}).get("conditional_sources", [])}
+    result, denied_aliases = [], set()
     for node in graph["nodes"].values():
         for alias in node["aliases"]:
             path = Path(alias)
             kind = document_kind(path, alias in loaded)
             try:
+                content.check_metadata(path)
                 boundary = audit_source_boundary(canonical(path), graph.get("_git_storage", []), path=path)
                 if boundary:
                     graph["partial"], graph["text_read_complete"] = True, False
@@ -116,15 +119,28 @@ def _candidate_records(graph, scenarios, content, selected):
                 text = data.decode("utf-8")
             except (OSError, UnicodeError, RuntimeError) as error:
                 failure = "changed_during_read" if "changed during" in str(error) else "blocked_frontier"
+                policy = isinstance(error, MetadataOnlyError)
+                if policy:
+                    failure = "excluded_metadata_only" if error.reason == "metadata_only" else "blocked_frontier"
+                    denied_aliases.add(alias)
                 graph["partial"], graph["text_read_complete"] = True, False
                 graph["boundaries"].append({"path": alias, "kind": failure, "phase": "candidates"})
                 for state in graph["states"].values():
                     if state["path"] == alias:
                         state.update(kind=failure, children=[])
+                        if policy:
+                            state.update(bytes=None, metadata_bytes=error.metadata["metadata_bytes"],
+                                         reason=error.reason)
                 continue
             for candidate in find_candidates(text, path, kind, selected):
                 candidate["source_sha256"] = node["sha256"]
                 result.append(candidate)
+    if denied_aliases:
+        for identity, node in list(graph["nodes"].items()):
+            node["aliases"] = [a for a in node["aliases"] if a not in denied_aliases]
+            if not node["aliases"]:
+                del graph["nodes"][identity]
+        graph["occurrences"] = [o for o in graph["occurrences"] if o["source"] not in denied_aliases]
     refresh_directory_summaries(graph)
     reachable, seen = set(), set()
     pending = [key for roots in graph["roots"].values() for key in roots]
@@ -196,7 +212,9 @@ def main(argv=None):
         request = ScopeRequest(projects, Path(args.codex_home) if args.codex_home else None,
                                Path(args.cwd) if args.cwd else None, settings)
         validate_request(request)
-        resolutions = json.loads(Path(args.resolutions).read_bytes()) if args.resolutions else []
+        content = _Content()
+        content.metadata_only(settings.get("metadata_only_paths", []))
+        resolutions = json.loads(content.read(Path(args.resolutions))) if args.resolutions else []
         if not isinstance(resolutions, list):
             raise ValueError("Resolutions must be a list")
         home, _ = _home(request)
@@ -206,7 +224,6 @@ def main(argv=None):
         _write_json(out / "manifest.json", manifest)
         for sig in (signal.SIGINT, signal.SIGTERM):
             handlers[sig] = signal.signal(sig, interrupt_once)
-        content = _Content()
         result = scan(request, content=content, excluded_paths=[out])
         manifest["phase"] = "references"
         _write_json(out / "manifest.json", manifest)
@@ -219,7 +236,10 @@ def main(argv=None):
         result["graph"] = {k: v for k, v in graph.items() if not k.startswith("_")}
         result["reading_summary"] = summarize_reading_paths(graph)
         result["text_read_complete"] = graph["text_read_complete"]
-        result["partial"] |= graph["partial"]
+        result["partial"] |= graph["partial"] or content.policy_refused
+        if "metadata_only_paths" in settings:
+            content.refresh_metadata()
+            result["metadata_only_files"] = content.metadata_rows
         if result["exit_code"] == 0 and result["candidates"]:
             result["exit_code"] = 1
         manifest["phase"] = "routes"

@@ -8,6 +8,9 @@ import re
 import string
 from typing import TypedDict
 from references import LIMITED
+from discovery import validate_metadata_paths
+
+_CRITERIA_PATH = Path(__file__).resolve().parents[1] / "assets/criteria.json"
 
 
 class AuditReport(TypedDict, total=False):
@@ -56,7 +59,7 @@ def _records(rows):
 
 
 def _criteria():
-    data = json.loads((Path(__file__).resolve().parents[1] / "assets/criteria.json").read_text())
+    data = json.loads(_CRITERIA_PATH.read_text())
     return {row["id"] for row in data["criteria"]}
 
 
@@ -93,7 +96,14 @@ def _reading_shape(report, scenarios):
     for record in (graph, summary):
         flags(record, ("partial", "text_read_complete"))
     for state in graph.get("states", {}).values():
-        text(state, ("kind",))
+        text(state, ("kind", "reason"))
+        metrics(state, ("metadata_bytes",))
+        if state.get("kind") == "excluded_metadata_only":
+            if state.get("bytes") is not None or state.get("reason") != "metadata_only":
+                raise ValueError("Invalid metadata-only terminal")
+            identity = state.get("identity")
+            if identity is not None and (not isinstance(identity, str) or not re.fullmatch(r"[0-9]+:[0-9]+", identity)):
+                raise ValueError("Invalid metadata-only terminal identity")
     for edge in _list(graph.get("occurrences", [])):
         if not isinstance(edge, dict):
             raise ValueError("Invalid persisted occurrence")
@@ -122,6 +132,49 @@ def _reading_shape(report, scenarios):
             flags(values, ("lower_bound",))
 
 
+def _metadata_shape(report):
+    settings = report.get("scope", {}).get("settings", {})
+    validate_metadata_paths(settings.get("metadata_only_paths", []))
+    pairs = {"regular_file": "metadata_only", "missing": "not_found",
+             "unavailable": "unresolved_metadata_identity", "nonregular": "nonregular_file"}
+    for row in _list(report.get("metadata_only_files", [])):
+        _object(row, ("path", "status", "reason", "metadata_bytes", "physical_identity"), ("metadata_error",))
+        validate_metadata_paths([row["path"]])
+        if not isinstance(row["status"], str) or pairs.get(row["status"]) != row["reason"]:
+            raise ValueError("Invalid metadata-only status/reason")
+        size = row["metadata_bytes"]
+        if ((row["status"] == "regular_file" and (type(size) is not int or size < 0))
+                or (row["status"] != "regular_file" and size is not None)):
+            raise ValueError("Invalid metadata-only byte count")
+        identity = row["physical_identity"]
+        if identity is not None and (not isinstance(identity, list) or len(identity) != 2
+                or any(type(n) is not int or n < 0 for n in identity)):
+            raise ValueError("Invalid metadata-only identity")
+        if "metadata_error" in row:
+            _string(row["metadata_error"])
+
+
+def _report_content(audit, *, sensitive=True):
+    from discovery import _Content, _POLICY
+    _metadata_shape(audit)
+    content = _Content()
+    home = Path(audit["scope"]["codex_home"])
+    if sensitive:
+        content.deny([Path.home() / path for path in _POLICY["known_sensitive_paths"]] + [home / "auth.json"])
+    # Preserve scan-observed identities even if declarations were renamed/replaced.
+    content.metadata_only(audit["scope"]["settings"].get("metadata_only_paths", []))
+    for row in audit.get("metadata_only_files", []):
+        if row["physical_identity"] is not None:
+            content.metadata_identities.add(tuple(row["physical_identity"]))
+    for state in audit.get("graph", {}).get("states", {}).values():
+        if state.get("kind") == "excluded_metadata_only" and state.get("identity") is not None:
+            identity = state["identity"]
+            if not isinstance(identity, str) or not re.fullmatch(r"[0-9]+:[0-9]+", identity):
+                raise ValueError("Invalid metadata-only terminal identity")
+            content.metadata_identities.add(tuple(map(int, identity.split(":"))))
+    return content
+
+
 def _report_shape(report):
     """Validate persisted structures consumed by comparison/output routing."""
     if not isinstance(report, dict) or type(report.get("schema_version")) is not int or report["schema_version"] != 1:
@@ -137,6 +190,7 @@ def _report_shape(report):
             or not Path(scope["codex_home"]).is_absolute()
             or scope["cwd"] is not None and (not isinstance(scope["cwd"], str) or not Path(scope["cwd"]).is_absolute())):
         raise ValueError("Invalid requested settings/home/cwd")
+    _metadata_shape(report)
     graph = report.get("graph", {})
     if (not isinstance(graph, dict) or not isinstance(graph.get("nodes", {}), dict)
             or not isinstance(graph.get("states", {}), dict)
@@ -235,10 +289,8 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
         if node.get("content_status") == "read":
             for alias in node["aliases"]:
                 aliases[alias] = node["sha256"]
-    from discovery import _Content, _POLICY, canonical, audit_source_boundary
-    content = _Content()
-    home = Path(audit["scope"]["codex_home"])
-    content.deny([Path.home() / path for path in _POLICY["known_sensitive_paths"]] + [home / "auth.json"])
+    from discovery import canonical, audit_source_boundary
+    content = _report_content(audit)
     git_storage = [Path(row["path"]) for row in _frontiers(audit) if row["kind"] == "git_administration"]
     texts = {}
 
@@ -247,6 +299,10 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
         digest = _hash(row["source_sha256"])
         if aliases.get(path) != digest:
             raise ValueError("Evidence is outside readable audited sources or has a stale hash")
+        try:
+            content.check_metadata(Path(path))
+        except OSError as error:
+            raise ValueError("Source evidence cannot be verified: " + path) from error
         if path not in texts:
             try:
                 real = canonical(Path(path))
@@ -465,6 +521,7 @@ def _reading_evidence(report, scenarios):
 
 
 def render_audit(report):
+    _metadata_shape(report)
     lines = ["# Instruction audit", "", "Coverage: " + ("partial" if report.get("partial") else "declared area complete") + "."]
     if report.get("route_limit_reached"):
         lines.append("Route stream truncated by --max-routes; coverage is partial.")
@@ -482,6 +539,14 @@ def render_audit(report):
     lines += ["", "Loader values are hypothetical; original bytes, included bytes and conditional references are separate.",
               "Directory subtotals measure unique reachable graph text, not filesystem directory size."]
     lines += _reading_evidence(report, scenarios)
+    if report.get("metadata_only_files"):
+        lines += ["", "## Metadata-only file declarations", "",
+                  "Routes stopped by this policy use `excluded_metadata_only`. "
+                  "Stat sizes are separate from readable text totals; aliases are not summed. "
+                  "Bodies and their descendant references were not inspected under this policy."]
+        lines += _table(("Path", "Status", "Reason", "Metadata bytes"),
+                        [(row["path"], row["status"], row["reason"], row["metadata_bytes"])
+                         for row in report["metadata_only_files"]])
     for finding in report.get("findings", []):
         lines += ["", "- " + finding["id"] + " [" + finding["rule_id"] + "] " + finding["status"] + ": " + finding["explanation"]]
         if finding.get("disposition"):
@@ -509,7 +574,11 @@ def render_audit(report):
 
 def compare_reports(before, after, *, before_sha256=None):
     for report in (before, after): _report_shape(report)
-    comparable = before["scope"] == after["scope"]
+    def scope(report):
+        value = copy.deepcopy(report["scope"])
+        value["settings"]["metadata_only_paths"] = sorted(set(value["settings"].get("metadata_only_paths", [])))
+        return value
+    comparable = scope(before) == scope(after)
     old = {f["id"]: f for f in before.get("findings", [])}
     new = after.get("findings", [])
     def identity(f):
