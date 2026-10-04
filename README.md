@@ -93,6 +93,9 @@ rule; use a source-bound informational resolution and rescan when the reference
 is not a required read. The heuristic does not settle distinct document/project/cwd
 bases; justified resolutions still require a rescan. Nested cwd scenarios can
 therefore retain unresolved links.
+Multiline or indented Setext headings are also approximated and can promote extra
+references or leave required reads unresolved. Correct their exact occurrences
+through the semantic handoff and rescan; full Markdown parsing is not claimed.
 POSIX filename bytes that cannot be UTF-8 encoded are escaped in reports; JSON
 preserves their filesystem representation, and normal Unicode stays unchanged.
 
@@ -141,6 +144,29 @@ For attributable byte deltas, rescan both states with the same analyzer version.
 If an old report has unknown/different analyzer provenance and its original state
 cannot be rescanned, treat the delta as non-attributable. Scope comparability alone
 cannot distinguish text changes from improved reference recognition.
+
+## Instruction-file inference
+
+The skill requests fresh Luna/high children with no inherited conversation to
+infer file lists from instruction text and directly check permitted candidates.
+The parent groups source ranges with their scenario/base contexts, corroborates
+metadata, validates source bindings and rescans using the existing resolution
+interface. File existence does not establish read intent or select an ambiguous
+base. Missing workers, unresolved references and excluded branches remain visible.
+
+The CLI alone does not perform this agent procedure. Only the scanner computes
+text bytes and physical deduplication; child metadata sizes are not reading totals.
+Each run keeps child reports and independent parent observations in its own
+`file-inference.md` evidence file. See the
+[handoff contract](skills/codex-md-improver/references/assessment-format.md#required-file-inference-handoff).
+
+Requested Luna/high settings do not attest hidden effective runtime identity.
+Autonomous packet composition, iterative orchestration and delegation in a fresh
+top-level skill invocation remain UNOBSERVED. A leader-dispatched child run and
+parent rescan establish only their bounded observations; child-reported tool use
+or non-following remains unverified without an independently exposed trace.
+Current verification and release boundaries are recorded in the
+[Luna workflow status](docs/status/2026-10-04-luna-file-inference.md).
 
 ## Controlled choice checks
 

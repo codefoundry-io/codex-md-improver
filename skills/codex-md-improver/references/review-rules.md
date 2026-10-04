@@ -10,6 +10,10 @@ Criteria: [AG02] [AG03] [AG04] [AG05] [AG06] [AG07] [AG08] [AG09] [AG14] [AG20] 
 
 ## burden
 
+Use the [required Luna/high file-inference handoff](assessment-format.md#required-file-inference-handoff)
+for independent instruction reading and direct candidate existence checks. Parent
+validation and scanner rescans establish the resulting reading totals.
+
 Inspect all instructed file/folder reads and their what/when conditions, including semantic references missed by lexical extraction. Resolve occurrences using source-bound evidence. Report every terminal route and known unique bytes, shared nodes, exclusions and inaccessible frontiers. Directory subtotals include unique reachable text, not filesystem size. Propose conditional reads only when they preserve purpose and can be recognized; test a disputed trigger independently.
 
 Criteria: [AG04] [AG10] [C1] [C9]

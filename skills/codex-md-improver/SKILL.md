@@ -31,7 +31,10 @@ once in the final response. Resolve dependent work only from the human's answer.
    only for an output-location decision (operational exit 2); do not broaden reads
    or alter permissions. In-target output requires explicit owner consent and
    `--allow-output-in-target`. Never reuse an existing output directory.
-3. Run the bundled analyzer; use the absolute script path resolved above:
+3. Apply established read exclusions before any scan using the
+   [file-inference handoff](references/assessment-format.md#required-file-inference-handoff).
+   If the requested scope cannot honor a boundary through supported inputs, report
+   it blocked/incomplete. Run the bundled analyzer with its absolute script path:
 
    ```sh
    python3 -B "$SKILL_DIR/scripts/md_improver.py" scan --project "$PROJECT" --codex-home "$CODEX_HOME_PATH" --out "$SCAN_OUT"
@@ -52,7 +55,13 @@ once in the final response. Resolve dependent work only from the human's answer.
    Bind justified occurrence decisions to the exact source/hash/span/text and
    rescan the same scope into a new output directory. Verify terminal routes;
    unresolved intent stays partial and needs a decision, not an invented target.
-4. Inspect candidates and source evidence, then load the relevant groups in
+4. Delegate instruction-to-file-list inference and direct existence checks to
+   fresh Luna/high children with `fork_turns="none"`, using the
+   [required handoff](references/assessment-format.md#required-file-inference-handoff).
+   Group bounded source ranges with their scenario/base contexts. Validate returned
+   bindings and observations, then rescan; repeat for newly reachable unreviewed
+   instructions. Unavailable or unfinished partitions leave coverage incomplete.
+   Inspect candidates and source evidence, then load the relevant groups in
    [review-rules.md](references/review-rules.md): placement for chain/scope issues,
    burden for linked reads, durable for recurring facts, wording for contradictions
    or duplication, environment for operational facts, and proposals for reporting.

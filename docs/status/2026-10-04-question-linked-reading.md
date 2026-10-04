@@ -75,6 +75,8 @@ fixture was removed. Independent Sol/high static re-review found no new concrete
 defect. README also discloses the admitted noun-heading precision limit; no new
 classification heuristic or question wording change was introduced.
 
-Current remaining gates: corrected-commit native CI and a fresh four-leg code review,
-then concrete final merge approval. Release and replacing the installed v0.1.0
-copy require their separate approvals; neither is performed by source validation.
+Commit `3412ce4` subsequently passed all five native CI jobs and the complete
+four-leg code round, with integrity/export/cleanup complete. The later
+[Luna workflow addition](2026-10-04-luna-file-inference.md) supersedes this patch's
+candidate proposal. Its current gates are tracked there. Final merge, release and
+replacing the installed v0.1.0 copy retain separate approval boundaries.
