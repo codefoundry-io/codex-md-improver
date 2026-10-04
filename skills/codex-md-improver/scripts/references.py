@@ -131,6 +131,50 @@ def _reference_label(label):
     return re.sub(r"[ \t\r\n]+", " ", label.casefold()).strip(" ")
 
 
+def _read_sections(text, fences):
+    """Bounded ATX/Setext heading context for conditional Reference tables."""
+    lines = text.splitlines(keepends=True)
+    offsets, offset = [], 0
+    for line in lines:
+        offsets.append(offset)
+        offset += len(line)
+    fenced = {i for i, start in enumerate(offsets) if any(a <= start < b for a, b in fences)}
+    sections, reading = {}, False
+    for index, (start, line) in enumerate(zip(offsets, lines)):
+        if index not in fenced:
+            atx = re.match(r"^ {0,3}#{1,6}(?:[ \t]+|$)(.*)", line.rstrip("\r\n"))
+            heading = re.sub(r"[ \t]+#+[ \t]*$", "", atx[1]).strip() if atx else None
+            if (heading is None and line.strip() and not line.lstrip().startswith("|")
+                    and index + 1 < len(lines) and index + 1 not in fenced
+                    and re.fullmatch(r" {0,3}(?:=+|-+)[ \t]*", lines[index + 1].rstrip("\r\n"))):
+                heading = line.strip()
+            if heading is not None:
+                reading = bool(re.match(r"(?:read|load)(?:\s|$)", heading, re.I))
+                reading = reading and _classification(heading) not in {*NON_READ, "mixed"}
+        sections[start] = reading
+    return sections
+
+
+def _pipe_positions(line):
+    positions, slashes = [], 0
+    for index, char in enumerate(line):
+        if char == "|" and slashes % 2 == 0:
+            positions.append(index)
+        slashes = slashes + 1 if char == "\\" else 0
+    return positions
+
+
+def _table_cells(line):
+    positions = _pipe_positions(line)
+    cells = [line[left + 1:right].strip()
+             for left, right in zip([-1, *positions], [*positions, len(line)])]
+    if positions and not cells[0]:
+        cells = cells[1:]
+    if positions and cells and not cells[-1]:
+        cells = cells[:-1]
+    return cells
+
+
 def _lex(text, path, kind=None):
     """Heuristic candidates only; unmatched prose still needs semantic review."""
     if (kind or document_kind(path)) == "code_config":
@@ -149,6 +193,7 @@ def _lex(text, path, kind=None):
         offset += len(line)
     if opening is not None:
         fences.append((opening, len(text)))
+    read_sections = _read_sections(text, fences)
     for match in re.finditer(r"(?m)^[ \t]*\[([^\]]+)\]:[ \t]*(?:\r?\n[ \t]*)?(\S[^\n]*)", text):
         if any(match.start() < b and match.end() > a for a, b in fences):
             continue
@@ -171,13 +216,22 @@ def _lex(text, path, kind=None):
         inferred = "uncertain" if contextual in {*NON_READ, "mixed"} else classification or contextual
         if inferred == "uncertain" and line.startswith("|"):
             column = text[line_start:start].count("|")
+            previous_rows = []
             for previous in reversed(text[:line_start].splitlines()):
                 if not previous.strip().startswith("|"):
                     break
+                previous_rows.append(previous)
                 cells = previous.split("|")
                 if column < len(cells) and re.fullmatch(r"(?:read|files? to read|읽기)", cells[column].strip(), re.I):
                     inferred = "read_dependency"
                     break
+            if (inferred == "uncertain" and contextual == "uncertain" and len(previous_rows) >= 2
+                    and read_sections.get(line_start)):
+                header, delimiter = (_table_cells(row) for row in previous_rows[-1:-3:-1])
+                column = len(_pipe_positions(text[line_start:start])) - 1
+                if (len(header) == len(delimiter) and all(re.fullmatch(r":?-+:?", cell) for cell in delimiter)
+                        and 0 <= column < len(header) and header[column].casefold() == "reference"):
+                    inferred = "read_dependency"
         occurrences.append({"span": [start, end], "text": text[start:end], "target_text": target,
                             "classification": inferred,
                             "syntax": kind, "condition": line})

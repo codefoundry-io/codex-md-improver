@@ -58,6 +58,10 @@ Inaccessible branches stay partial even when all available text was reviewed.
 
 ## Decisions and dispositions
 
+Use the skill's question-delivery recipe for necessary owner choices. Saving a
+pending question here does not deliver it or supply an answer. Prior actual choices
+remain valid; unavailable/rejected UI delivery requires an explicit chat question.
+
 `owner_decisions` records require unique `id`, `decision`, `scope` and `provenance`.
 Decision is `approved`, `deferred` or `rejected`; scope is a nonempty list of
 absolute paths. Provenance is a nonempty record of the actual owner's decision.

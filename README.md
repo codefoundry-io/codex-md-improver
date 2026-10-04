@@ -10,7 +10,9 @@ available in this public repository. Native macOS and Ubuntu checks passed on
 Python 3.11/3.12, with the Python 3.10 rejection guard; see the
 [initial implementation run](https://github.com/codefoundry-io/codex-md-improver/actions/runs/37116926970)
 and [current CI results](https://github.com/codefoundry-io/codex-md-improver/actions/workflows/ci.yml).
-A tagged release and fresh installed-skill verification are still pending.
+[v0.1.0](https://github.com/codefoundry-io/codex-md-improver/releases/tag/v0.1.0)
+is published. A checkout can contain later changes; verify the selected release
+and actual loaded skill before attributing its behavior to this source.
 
 ## Use from a checkout
 
@@ -56,6 +58,13 @@ The route stream is complete unless `--max-routes` truncates it; `route_limit_re
 and `audit.md` disclose that truncation.
 Original bytes, loader-charged bytes and linked reading volume are distinct metrics.
 Shared physical text is counted uniquely while all route identities are retained.
+The Markdown report shows loader values per scenario and separate known reading
+totals. Those totals union discovered guidance, including shadowed variants, and
+conditional linked text across scenarios; they are not one session's load.
+Unresolved references retain their cwd, source condition and base alternatives.
+Incomplete discovery/traversal and intentional skill exclusions make the numeric
+reading totals lower bounds. A route cap alone does not reduce the measured graph
+total. Literal table cells use entity encoding; search raw paths in `audit.json`.
 Directory subtotals count reachable graph text, not filesystem directory size.
 Per-scenario subtotals preserve different relative-reference meanings; shared
 directory totals count the union of physical text across those scenarios.
@@ -72,6 +81,11 @@ the shared budget; a known gate or exhausted budget still contributes zero.
 
 Recursive `**` glob components remain unresolved until a concrete source-bound
 decision is supplied. URLs, including `file:`, are inventoried without traversal.
+Plain paths in a `Reference` table column can inherit a conditional read directive
+from an enclosing `Read` or `Load` heading. Other columns, non-table prose, examples
+and output rows do not gain that intent from the heading. This bounded heuristic
+does not settle distinct document/project/cwd bases; justified resolutions still
+require a rescan. Nested cwd scenarios can therefore retain unresolved links.
 POSIX filename bytes that cannot be UTF-8 encoded are escaped in reports; JSON
 preserves their filesystem representation, and normal Unicode stays unchanged.
 
@@ -105,6 +119,9 @@ current run remain excluded from its audit. CLI assessment hashes bind the actua
 input JSON bytes. Findings retain exact source hashes/spans; rejected leads and pending
 owner questions stay visible. Scope moves, conflicts, potentially intentional
 duplicates and new destinations require owner decisions before any target edit.
+The skill uses a permitted selectable question API when available. If delivery is
+unavailable or rejected, it asks explicitly in chat and states the UI limitation.
+Pending report fields and accepted delivery are not human decisions.
 Temporary output is usable when host-permitted; retain needed artifacts before
 its host-specific expiry. Inaccessible inputs are not a reason to weaken permissions.
 
@@ -113,6 +130,10 @@ warnings; 2 unusable inputs/output; 3 partial coverage. Precedence is 2, 3, 1, 0
 Zero does not certify prompt quality. Missing semantic judgments remain unassessed.
 Scores and criterion counts summarize supplied judgments; they do not authorize
 edits, publication or release.
+For attributable byte deltas, rescan both states with the same analyzer version.
+If an old report has unknown/different analyzer provenance and its original state
+cannot be rescanned, treat the delta as non-attributable. Scope comparability alone
+cannot distinguish text changes from improved reference recognition.
 
 ## Controlled choice checks
 
@@ -131,7 +152,8 @@ python3 -B tools/package_skill.py --skill-root skills/codex-md-improver \
   --out-dir "$NEW_ABSOLUTE_PACKAGE_DIR" --version 0.1.0
 ```
 
-`0.1.0` is a candidate version, not a published tag. The archive includes an exact
+The example version `0.1.0` is already published; choose a new version for a later
+candidate. Building a package does not publish it. The archive includes an exact
 selected-file allowlist, the subtree MIT notice and a sorted SHA-256/size manifest.
 Unexpected files, source symlinks, missing resources and machine-specific paths
 are rejected. Byte equality is not an authenticity claim; verify the source commit

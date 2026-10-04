@@ -5,7 +5,9 @@ import copy
 from collections import Counter
 from pathlib import Path
 import re
+import string
 from typing import TypedDict
+from references import LIMITED
 
 
 class AuditReport(TypedDict, total=False):
@@ -344,6 +346,71 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
     return result
 
 
+def _literal_cell(value):
+    """Keep audited text literal and on one physical Markdown table row."""
+    if value is None:
+        return "unknown"
+    text = ""
+    for char in str(value):
+        if char in "\r\n\t":
+            text += {"\r": r"\r", "\n": r"\n", "\t": r"\t"}[char]
+        elif not char.isprintable():
+            text += char.encode("unicode_escape").decode("ascii")
+        else:
+            text += char
+    return "".join(f"&#{ord(char)};" if char in string.punctuation else char for char in text)
+
+
+def _table(headers, rows):
+    if not rows:
+        return []
+    def cell(value):
+        return "<br>".join(_literal_cell(item) for item in value) if isinstance(value, list) else _literal_cell(value)
+    return ["", "| " + " | ".join(headers) + " |", "|" + "---|" * len(headers),
+            *("| " + " | ".join(cell(value) for value in row) + " |" for row in rows)]
+
+
+def _reading_evidence(report, scenarios):
+    graph, summary = report.get("graph", {}), report.get("reading_summary", {})
+    counts = Counter(state.get("kind") for state in graph.get("states", {}).values()
+                     if state.get("kind") in LIMITED | {"excluded_skill"})
+    lower_bound = (bool(graph.get("partial")) or bool(summary.get("partial"))
+                   or graph.get("text_read_complete") is False or summary.get("text_read_complete") is False
+                   or report.get("inventory_complete") is False
+                   or any(chain.get("partial") for chain in scenarios) or bool(counts.get("excluded_skill")))
+    lines = ["", "Reading measurements are the union of discovered guidance (including unselected or shadowed variants) "
+             "and reachable conditional text across selected scenarios, not one session's load.",
+             "Table cells encode literal text for Markdown. Search or copy raw paths and conditions from audit.json."]
+    lines += _table(("Environment group", "Cwd", "Scenario ID", "Loader original bytes", "Loader included bytes"),
+                    [(chain.get("environment_group_id", ""), chain.get("cwd"), chain.get("scenario_id"),
+                      chain.get("project_original_bytes"), chain.get("project_included_bytes")) for chain in scenarios])
+    lines += _table(("Metric", "Measured value", "Status"),
+                    [(label, summary.get(key), "unknown" if summary.get(key) is None
+                      else "lower bound" if lower_bound else "complete") for label, key in (
+                          ("Known unique reachable text bytes", "unique_text_bytes"),
+                          ("Physical readable text files", "physical_text_files"))])
+    order = {chain.get("scenario_id"): index for index, chain in enumerate(scenarios)}
+    unresolved = sorted((edge for edge in graph.get("occurrences", []) if edge.get("status") == "unresolved"),
+                        key=lambda edge: order.get(edge.get("scenario_id"), len(order)))
+    lines += _table(("Scenario ID", "Cwd", "Source", "Target", "Classification", "Condition", "Base alternatives"),
+                    [(edge.get("scenario_id"), edge.get("cwd"), edge.get("source"), edge.get("target_text"),
+                      edge.get("classification"), edge.get("condition"), edge.get("alternatives", []))
+                     for edge in unresolved])
+    cwd = {chain.get("scenario_id"): chain.get("cwd") for chain in scenarios}
+    directories = summary.get("directory_summaries_by_scenario", {})
+    rows = []
+    for scenario in sorted(directories, key=lambda value: order.get(value, len(order))):
+        for path, values in directories[scenario].items():
+            size, files = values.get("unique_text_bytes"), values.get("physical_text_files")
+            status = "unknown" if size is None or files is None else "lower bound" if values.get("lower_bound") else "complete"
+            rows.append((scenario, cwd.get(scenario), path, size, files, status))
+    lines += _table(("Scenario ID", "Cwd", "Directory", "Known unique reachable text bytes", "Physical readable text files", "Status"), rows)
+    lines += _table(("Limited kind", "Scenario state count", "Meaning"),
+                    [(kind, count, "intentional boundary" if kind == "excluded_skill" else "limited reading")
+                     for kind, count in sorted(counts.items())])
+    return lines
+
+
 def render_audit(report):
     lines = ["# Instruction audit", "", "Coverage: " + ("partial" if report.get("partial") else "declared area complete") + "."]
     if report.get("route_limit_reached"):
@@ -361,6 +428,7 @@ def render_audit(report):
             lines.append("- Loader original-volume warning in environment group " + str(group["id"]) + ".")
     lines += ["", "Loader values are hypothetical; original bytes, included bytes and conditional references are separate.",
               "Directory subtotals measure unique reachable graph text, not filesystem directory size."]
+    lines += _reading_evidence(report, scenarios)
     for finding in report.get("findings", []):
         lines += ["", "- " + finding["id"] + " [" + finding["rule_id"] + "] " + finding["status"] + ": " + finding["explanation"]]
         if finding.get("disposition"):
