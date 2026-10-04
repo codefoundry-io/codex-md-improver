@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 import stat
 from urllib.parse import unquote
-from discovery import _Content, _POLICY, canonical, audit_source_boundary, validate_reference_base
+from discovery import _Content, _POLICY, canonical, audit_source_boundary, validate_reference_base, MetadataOnlyError
 
 
 class InvalidOutputLocation(ValueError):
@@ -16,7 +16,7 @@ class InvalidOutputLocation(ValueError):
 
 
 LIMITED = {"blocked_frontier", "missing_target", "unresolved", "excluded_sensitive",
-           "excluded_git", "binary", "undecodable", "special_file", "changed_during_read"}
+           "excluded_git", "excluded_metadata_only", "binary", "undecodable", "special_file", "changed_during_read"}
 NON_READ = {"informational", "example", "output"}
 CONFIG_NAMES = {".env", ".npmrc", ".pgpass", ".netrc", ".pypirc", ".gitignore",
                 ".gitattributes", ".dockerignore", ".editorconfig", ".yarnrc"}
@@ -131,6 +131,49 @@ def _reference_label(label):
     return re.sub(r"[ \t\r\n]+", " ", label.casefold()).strip(" ")
 
 
+def _read_sections(text, fences):
+    """Bounded ATX/Setext heading context for conditional Reference tables."""
+    lines = text.splitlines(keepends=True)
+    offsets, offset = [], 0
+    for line in lines:
+        offsets.append(offset)
+        offset += len(line)
+    fenced = {i for i, start in enumerate(offsets) if any(a <= start < b for a, b in fences)}
+    sections, reading = {}, False
+    for index, (start, line) in enumerate(zip(offsets, lines)):
+        if index not in fenced:
+            atx = re.match(r"^ {0,3}#{1,6}(?:[ \t]+|$)(.*)", line.rstrip("\r\n"))
+            heading = re.sub(r"[ \t]+#+[ \t]*$", "", atx[1]).strip() if atx else None
+            if (heading is None and line.strip() and not line.lstrip().startswith("|")
+                    and index + 1 < len(lines) and index + 1 not in fenced
+                    and re.fullmatch(r" {0,3}(?:=+|-+)[ \t]*", lines[index + 1].rstrip("\r\n"))):
+                heading = line.strip()
+            if heading is not None:
+                reading = bool(re.match(r"(?:read|load)(?:\s|$)", heading, re.I))
+                reading = reading and _classification(heading) not in {*NON_READ, "mixed"}
+        sections[start] = reading
+    return sections
+
+
+def _pipe_positions(line):
+    positions = []
+    for index, char in enumerate(line):
+        if char == "|" and (index == 0 or line[index - 1] != "\\"):
+            positions.append(index)
+    return positions
+
+
+def _table_cells(line):
+    positions = _pipe_positions(line)
+    cells = [line[left + 1:right].strip()
+             for left, right in zip([-1, *positions], [*positions, len(line)])]
+    if positions and not cells[0]:
+        cells = cells[1:]
+    if positions and cells and not cells[-1]:
+        cells = cells[:-1]
+    return cells
+
+
 def _lex(text, path, kind=None):
     """Heuristic candidates only; unmatched prose still needs semantic review."""
     if (kind or document_kind(path)) == "code_config":
@@ -149,6 +192,7 @@ def _lex(text, path, kind=None):
         offset += len(line)
     if opening is not None:
         fences.append((opening, len(text)))
+    read_sections = _read_sections(text, fences)
     for match in re.finditer(r"(?m)^[ \t]*\[([^\]]+)\]:[ \t]*(?:\r?\n[ \t]*)?(\S[^\n]*)", text):
         if any(match.start() < b and match.end() > a for a, b in fences):
             continue
@@ -171,13 +215,22 @@ def _lex(text, path, kind=None):
         inferred = "uncertain" if contextual in {*NON_READ, "mixed"} else classification or contextual
         if inferred == "uncertain" and line.startswith("|"):
             column = text[line_start:start].count("|")
+            previous_rows = []
             for previous in reversed(text[:line_start].splitlines()):
                 if not previous.strip().startswith("|"):
                     break
+                previous_rows.append(previous)
                 cells = previous.split("|")
                 if column < len(cells) and re.fullmatch(r"(?:read|files? to read|읽기)", cells[column].strip(), re.I):
                     inferred = "read_dependency"
                     break
+            if (inferred == "uncertain" and contextual == "uncertain" and len(previous_rows) >= 2
+                    and read_sections.get(line_start)):
+                header, delimiter = (_table_cells(row) for row in previous_rows[-1:-3:-1])
+                column = len(_pipe_positions(text[line_start:start])) - 1
+                if (len(header) == len(delimiter) and all(re.fullmatch(r":?-+:?", cell) for cell in delimiter)
+                        and 0 <= column < len(header) and header[column].casefold() == "reference"):
+                    inferred = "read_dependency"
         occurrences.append({"span": [start, end], "text": text[start:end], "target_text": target,
                             "classification": inferred,
                             "syntax": kind, "condition": line})
@@ -359,6 +412,8 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
              "directory_totals": {}, "boundaries": [], "text_read_complete": True,
              "semantic_review_complete": False, "_chains": chains}
     content = context.get("content") or _Content()
+    content.metadata_only(context.get("metadata_only_paths", []), inspect=True)
+    graph["root_conditions"] = {}
     texts, consumed, directories = {}, set(), set()
     home = Path(context.get("user_home", Path.home()))
     codex_home = Path(context.get("codex_home", home / ".codex"))
@@ -403,12 +458,23 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             graph["partial"], graph["text_read_complete"] = True, False
         return key
 
+    def policy_terminal(chain, path, error):
+        kind = "excluded_metadata_only" if error.reason == "metadata_only" else "blocked_frontier"
+        identity = error.metadata["physical_identity"]
+        key = terminal(chain, path, kind, identity=":".join(map(str, identity)) if identity else None)
+        graph["states"][key].update(bytes=None, metadata_bytes=error.metadata["metadata_bytes"],
+                                    reason=error.reason)
+        return key
+
     def visit(path, chain, ancestors, direct=True):
         path = _absolute_reference(path)
         key = state_key(chain, path)
         try:
+            content.check_metadata(path)
             info = path.stat()
             real = canonical(path)
+        except MetadataOnlyError as error:
+            return policy_terminal(chain, path, error)
         except FileNotFoundError:
             return terminal(chain, path, "missing_target")
         except OSError:
@@ -469,6 +535,8 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
         if identity not in graph["nodes"]:
             try:
                 data = content.read(path)
+            except MetadataOnlyError as error:
+                return policy_terminal(chain, path, error)
             except OSError as error:
                 kind = "changed_during_read" if "changed during" in str(error) else "blocked_frontier"
                 return terminal(chain, path, kind, info, identity)
@@ -486,7 +554,8 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
             node["aliases"].append(str(path))
         text = texts[identity]
         terminal(chain, path, "leaf", info, identity)
-        guidance = {s["path"] for s in [chain.get("global_source", {}), *chain["sources"], *chain.get("scope_sources", [])] if s.get("path")}
+        guidance = {s["path"] for s in [chain.get("global_source", {}), *chain["sources"], *chain.get("scope_sources", []),
+                                                 *chain.get("global_source", {}).get("conditional_sources", [])] if s.get("path")}
         candidates = _lex(text, path, document_kind(path, str(path) in guidance))
         explicit_targets = set()
         for index, resolution in enumerate(resolutions):
@@ -543,8 +612,14 @@ def build_reference_graph(chains, declared_bases=None, resolutions=None, *, cont
         return key
 
     for chain in chains:
-        sources = [s["path"] for s in [chain.get("global_source", {}), *chain["sources"], *chain.get("scope_sources", [])] if s.get("path")]
+        sources = [s["path"] for s in [chain.get("global_source", {}), *chain["sources"], *chain.get("scope_sources", []),
+                                                 *chain.get("global_source", {}).get("conditional_sources", [])] if s.get("path")]
         graph["roots"][chain["scenario_id"]] = []
+        definite = {s["path"] for s in [chain.get("global_source", {}), *chain["sources"],
+                                       *chain.get("scope_sources", [])] if s.get("path")}
+        for item in chain.get("global_source", {}).get("conditional_sources", []):
+            if item["path"] not in definite:
+                graph["root_conditions"][state_key(chain, Path(item["path"]))] = [item["condition"]]
         for source in dict.fromkeys(sources):
             key = visit(Path(source), chain, set())
             if key:
@@ -586,7 +661,8 @@ def refresh_directory_summaries(graph):
             if row["identity"] in graph["nodes"]:
                 ids.add(row["identity"])
             if row["kind"] in LIMITED or row["kind"] == "excluded_skill":
-                record(frontiers, {"scenario_id": scenario, "path": row["path"], "kind": row["kind"]})
+                record(frontiers, {"scenario_id": scenario, "path": row["path"], "kind": row["kind"],
+                                   **({"reason": row["reason"]} if "reason" in row else {})})
             for edge in row["children"]:
                 evidence = condition(row, edge, scenario)
                 record(conditions, evidence)
@@ -642,6 +718,8 @@ def iter_terminal_paths(graph, chain):
                 "scenario_project_root": chain["scenario_project_root"], "loader_sources": loaded,
                 "originating_instruction_file": origin, "route": route, "conditions": conditions,
                 "terminal_path": node["path"], "terminal_kind": kind, "terminal_bytes": node["bytes"],
+                **({"terminal_reason": node["reason"]} if "reason" in node else {}),
+                **({"terminal_metadata_bytes": node["metadata_bytes"]} if "metadata_bytes" in node else {}),
                 "route_original_bytes": total,
                 "lower_bound": prefix_incomplete or kind in LIMITED or kind == "excluded_skill",
                 "content_status": "read" if node["identity"] in graph["nodes"] else "metadata_only",
@@ -668,7 +746,8 @@ def iter_terminal_paths(graph, chain):
                 yield from walk(edge["state"], current, [*conditions, edge["condition"]],
                                 ancestors | {identity}, counted, total, origin)
     for root in graph["roots"].get(chain["scenario_id"], []):
-        yield from walk(root, [], [], set(), initial_ids, initial_total, graph["states"][root]["path"])
+        yield from walk(root, [], graph.get("root_conditions", {}).get(root, []), set(),
+                        initial_ids, initial_total, graph["states"][root]["path"])
 
 
 def summarize_reading_paths(graph):

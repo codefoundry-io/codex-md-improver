@@ -84,6 +84,16 @@ class ReportingTests(unittest.TestCase):
         self.assertTrue(result["semantic_review_complete"])
         self.assertIn("Subjective", render_audit(result))
 
+    def test_semantic_only_incompleteness_does_not_reduce_reading_measurement(self):
+        from test_reading_evidence import tables
+        result = enrich_audit(self.audit, self.assessment(semantic_review_complete=False))
+        self.assertTrue(result["partial"])
+        self.assertTrue(result["text_read_complete"])
+        rows = tables(render_audit(result))
+        metric, = [row for row in rows if row.get("Metric") == "Known unique reachable text bytes"]
+        self.assertEqual(metric["Status"], "complete")
+        self.assertEqual(metric["Measured value"], str(len(self.source.read_bytes())))
+
     def test_invalid_bindings_schema_ids_and_spans_reject(self):
         base = self.assessment(findings=[self.finding()])
         variants = []

@@ -84,6 +84,16 @@ owner-review
 - The owner adopted the structured aggregation contract on 2026-10-03: one PASS/FAIL/NA verdict per rule ID per audit, reject duplicate IDs, applicable=PASS+FAIL, pass-rate=PASS/applicable (undefined at zero), separate NA and unassessed counts, and FAIL-to-PASS transitions only across comparable reports. The legacy parser and other pending criteria remain unadopted.
 - For prompt/skill wording plateaus, consolidate findings once with a fresh read-only subagent and apply a bounded revision. Then judge disputed choices through fresh Sol/medium probes with `fork_turns="none"`, without expected answers or review history in worker packets. Dedicated executor and formal approval requirements remain separate.
 
+## File-inference direction, 2026-10-04
+
+Owner: `지침에서 파일 목록을 유추하는 것은 서브에이전트를 luna high를 사용해서 하도록 파일 리스트를 읽고 직접 파일이 존재하는지 검증하도록 구성해`
+
+Use fresh Luna/high children for instruction-file inference and permitted direct
+existence checks. This is separate from Sol/medium controlled choice probes and
+the dedicated behavior executor. The parent validates bindings and observations;
+existing scanner resolutions/rescans retain byte accounting. Missing capabilities
+leave coverage incomplete; no silent family substitution or target edits follow.
+
 ## Decision register
 
 IDs refer to the questionnaire. These are authoring evidence, not 160 instructions to preload into the shipped skill. Source paths from the local questionnaire are intentionally not included in this prospective public project.

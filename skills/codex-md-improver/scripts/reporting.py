@@ -5,7 +5,12 @@ import copy
 from collections import Counter
 from pathlib import Path
 import re
+import string
 from typing import TypedDict
+from references import LIMITED
+from discovery import validate_metadata_paths
+
+_CRITERIA_PATH = Path(__file__).resolve().parents[1] / "assets/criteria.json"
 
 
 class AuditReport(TypedDict, total=False):
@@ -54,7 +59,7 @@ def _records(rows):
 
 
 def _criteria():
-    data = json.loads((Path(__file__).resolve().parents[1] / "assets/criteria.json").read_text())
+    data = json.loads(_CRITERIA_PATH.read_text())
     return {row["id"] for row in data["criteria"]}
 
 
@@ -69,6 +74,105 @@ def _frontiers(report):
         if "error" in row:
             _string(row["error"])
     return rows
+
+
+def _reading_shape(report, scenarios):
+    """Validate persisted fields consumed by the reading-evidence tables."""
+    def text(record, names):
+        for name in names:
+            if record.get(name) is not None and not isinstance(record[name], str):
+                raise ValueError("Invalid reading text: " + name)
+    def metrics(record, names):
+        for name in names:
+            value = record.get(name)
+            if value is not None and (type(value) is not int or value < 0):
+                raise ValueError("Invalid reading metric: " + name)
+    def flags(record, names):
+        for name in names:
+            if name in record and type(record[name]) is not bool:
+                raise ValueError("Invalid reading flag: " + name)
+    graph, summary = report.get("graph", {}), report.get("reading_summary", {})
+    flags(report, ("inventory_complete",))
+    for record in (graph, summary):
+        flags(record, ("partial", "text_read_complete"))
+    for state in graph.get("states", {}).values():
+        text(state, ("kind", "reason"))
+        metrics(state, ("metadata_bytes",))
+        if state.get("kind") == "excluded_metadata_only":
+            if state.get("bytes") is not None or state.get("reason") != "metadata_only":
+                raise ValueError("Invalid metadata-only terminal")
+            identity = state.get("identity")
+            if identity is not None and (not isinstance(identity, str) or not re.fullmatch(r"[0-9]+:[0-9]+", identity)):
+                raise ValueError("Invalid metadata-only terminal identity")
+    for edge in _list(graph.get("occurrences", [])):
+        if not isinstance(edge, dict):
+            raise ValueError("Invalid persisted occurrence")
+        text(edge, ("status", "scenario_id", "cwd", "source", "target_text", "classification", "condition"))
+        if any(not isinstance(value, str) for value in _list(edge.get("alternatives", []))):
+            raise ValueError("Invalid reading alternatives")
+    for scenario in scenarios:
+        text(scenario, ("scenario_id", "cwd", "environment_group_id"))
+        metrics(scenario, ("project_original_bytes", "project_included_bytes"))
+        flags(scenario, ("partial",))
+        global_source = scenario.get("global_source", {})
+        if not isinstance(global_source, dict):
+            raise ValueError("Invalid global loader source")
+        metrics(global_source, ("original_bytes", "included_bytes"))
+    metrics(summary, ("physical_text_files",))
+    directories = summary.get("directory_summaries_by_scenario", {})
+    if not isinstance(directories, dict):
+        raise ValueError("Invalid scenario directory summaries")
+    for paths in directories.values():
+        if not isinstance(paths, dict):
+            raise ValueError("Invalid directory summaries")
+        for values in paths.values():
+            if not isinstance(values, dict):
+                raise ValueError("Invalid directory summary")
+            metrics(values, ("unique_text_bytes", "physical_text_files"))
+            flags(values, ("lower_bound",))
+
+
+def _metadata_shape(report):
+    settings = report.get("scope", {}).get("settings", {})
+    validate_metadata_paths(settings.get("metadata_only_paths", []))
+    pairs = {"regular_file": "metadata_only", "missing": "not_found",
+             "unavailable": "unresolved_metadata_identity", "nonregular": "nonregular_file"}
+    for row in _list(report.get("metadata_only_files", [])):
+        _object(row, ("path", "status", "reason", "metadata_bytes", "physical_identity"), ("metadata_error",))
+        validate_metadata_paths([row["path"]])
+        if not isinstance(row["status"], str) or pairs.get(row["status"]) != row["reason"]:
+            raise ValueError("Invalid metadata-only status/reason")
+        size = row["metadata_bytes"]
+        if ((row["status"] == "regular_file" and (type(size) is not int or size < 0))
+                or (row["status"] != "regular_file" and size is not None)):
+            raise ValueError("Invalid metadata-only byte count")
+        identity = row["physical_identity"]
+        if identity is not None and (not isinstance(identity, list) or len(identity) != 2
+                or any(type(n) is not int or n < 0 for n in identity)):
+            raise ValueError("Invalid metadata-only identity")
+        if "metadata_error" in row:
+            _string(row["metadata_error"])
+
+
+def _report_content(audit, *, sensitive=True):
+    from discovery import _Content, _POLICY
+    _metadata_shape(audit)
+    content = _Content()
+    home = Path(audit["scope"]["codex_home"])
+    if sensitive:
+        content.deny([Path.home() / path for path in _POLICY["known_sensitive_paths"]] + [home / "auth.json"])
+    # Preserve scan-observed identities even if declarations were renamed/replaced.
+    content.metadata_only(audit["scope"]["settings"].get("metadata_only_paths", []))
+    for row in audit.get("metadata_only_files", []):
+        if row["physical_identity"] is not None:
+            content.metadata_identities.add(tuple(row["physical_identity"]))
+    for state in audit.get("graph", {}).get("states", {}).values():
+        if state.get("kind") == "excluded_metadata_only" and state.get("identity") is not None:
+            identity = state["identity"]
+            if not isinstance(identity, str) or not re.fullmatch(r"[0-9]+:[0-9]+", identity):
+                raise ValueError("Invalid metadata-only terminal identity")
+            content.metadata_identities.add(tuple(map(int, identity.split(":"))))
+    return content
 
 
 def _report_shape(report):
@@ -86,6 +190,7 @@ def _report_shape(report):
             or not Path(scope["codex_home"]).is_absolute()
             or scope["cwd"] is not None and (not isinstance(scope["cwd"], str) or not Path(scope["cwd"]).is_absolute())):
         raise ValueError("Invalid requested settings/home/cwd")
+    _metadata_shape(report)
     graph = report.get("graph", {})
     if (not isinstance(graph, dict) or not isinstance(graph.get("nodes", {}), dict)
             or not isinstance(graph.get("states", {}), dict)
@@ -118,6 +223,7 @@ def _report_shape(report):
     for name in ("unique_text_bytes", "occurrences"):
         value = summary.get(name)
         if value is not None and (type(value) is not int or value < 0): raise ValueError("Invalid reading metric")
+    _reading_shape(report, scenarios)
     for scenario in scenarios:
         for name in ("warning", "raw_volume_exceeds_budget"):
             if scenario.get(name) is not None and type(scenario[name]) is not bool:
@@ -183,10 +289,8 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
         if node.get("content_status") == "read":
             for alias in node["aliases"]:
                 aliases[alias] = node["sha256"]
-    from discovery import _Content, _POLICY, canonical, audit_source_boundary
-    content = _Content()
-    home = Path(audit["scope"]["codex_home"])
-    content.deny([Path.home() / path for path in _POLICY["known_sensitive_paths"]] + [home / "auth.json"])
+    from discovery import canonical, audit_source_boundary
+    content = _report_content(audit)
     git_storage = [Path(row["path"]) for row in _frontiers(audit) if row["kind"] == "git_administration"]
     texts = {}
 
@@ -195,6 +299,10 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
         digest = _hash(row["source_sha256"])
         if aliases.get(path) != digest:
             raise ValueError("Evidence is outside readable audited sources or has a stale hash")
+        try:
+            content.check_metadata(Path(path))
+        except OSError as error:
+            raise ValueError("Source evidence cannot be verified: " + path) from error
         if path not in texts:
             try:
                 real = canonical(Path(path))
@@ -344,7 +452,76 @@ def enrich_audit(audit, assessment, *, input_sha256=None):
     return result
 
 
+def _literal_cell(value):
+    """Keep audited text literal and on one physical Markdown table row."""
+    if value is None:
+        return "unknown"
+    text = ""
+    for char in str(value):
+        if char in "\r\n\t":
+            text += {"\r": r"\r", "\n": r"\n", "\t": r"\t"}[char]
+        elif not char.isprintable():
+            text += char.encode("unicode_escape").decode("ascii")
+        else:
+            text += char
+    return "".join(f"&#{ord(char)};" if char in string.punctuation else char for char in text)
+
+
+def _table(headers, rows):
+    if not rows:
+        return []
+    def cell(value):
+        return "<br>".join(_literal_cell(item) for item in value) if isinstance(value, list) else _literal_cell(value)
+    return ["", "| " + " | ".join(headers) + " |", "|" + "---|" * len(headers),
+            *("| " + " | ".join(cell(value) for value in row) + " |" for row in rows)]
+
+
+def _reading_evidence(report, scenarios):
+    graph, summary = report.get("graph", {}), report.get("reading_summary", {})
+    counts = Counter(state.get("kind") for state in graph.get("states", {}).values()
+                     if state.get("kind") in LIMITED | {"excluded_skill"})
+    lower_bound = (bool(graph.get("partial")) or bool(summary.get("partial"))
+                   or graph.get("text_read_complete") is False or summary.get("text_read_complete") is False
+                   or report.get("inventory_complete") is False
+                   or any(chain.get("partial") for chain in scenarios) or bool(counts.get("excluded_skill")))
+    lines = ["", "Reading measurements are the union of discovered guidance (including unselected or shadowed variants) "
+             "and reachable conditional text across selected scenarios, not one session's load.",
+             "Table cells encode literal text for Markdown. Search or copy raw paths and conditions from audit.json."]
+    lines += _table(("Environment group", "Cwd", "Scenario ID", "Project loader original bytes", "Project loader included bytes",
+                     "Global loader original bytes", "Global loader included bytes"),
+                    [(chain.get("environment_group_id", ""), chain.get("cwd"), chain.get("scenario_id"),
+                      chain.get("project_original_bytes"), chain.get("project_included_bytes"),
+                      chain.get("global_source", {}).get("original_bytes"),
+                      chain.get("global_source", {}).get("included_bytes")) for chain in scenarios])
+    lines += _table(("Metric", "Measured value", "Status"),
+                    [(label, summary.get(key), "unknown" if summary.get(key) is None
+                      else "lower bound" if lower_bound else "complete") for label, key in (
+                          ("Known unique reachable text bytes", "unique_text_bytes"),
+                          ("Physical readable text files", "physical_text_files"))])
+    order = {chain.get("scenario_id"): index for index, chain in enumerate(scenarios)}
+    unresolved = sorted((edge for edge in graph.get("occurrences", []) if edge.get("status") == "unresolved"),
+                        key=lambda edge: order.get(edge.get("scenario_id"), len(order)))
+    lines += _table(("Scenario ID", "Cwd", "Source", "Target", "Classification", "Condition", "Base alternatives"),
+                    [(edge.get("scenario_id"), edge.get("cwd"), edge.get("source"), edge.get("target_text"),
+                      edge.get("classification"), edge.get("condition"), edge.get("alternatives", []))
+                     for edge in unresolved])
+    cwd = {chain.get("scenario_id"): chain.get("cwd") for chain in scenarios}
+    directories = summary.get("directory_summaries_by_scenario", {})
+    rows = []
+    for scenario in sorted(directories, key=lambda value: order.get(value, len(order))):
+        for path, values in directories[scenario].items():
+            size, files = values.get("unique_text_bytes"), values.get("physical_text_files")
+            status = "unknown" if size is None or files is None else "lower bound" if values.get("lower_bound") else "complete"
+            rows.append((scenario, cwd.get(scenario), path, size, files, status))
+    lines += _table(("Scenario ID", "Cwd", "Directory", "Known unique reachable text bytes", "Physical readable text files", "Status"), rows)
+    lines += _table(("Limited kind", "Scenario state count", "Meaning"),
+                    [(kind, count, "intentional boundary" if kind == "excluded_skill" else "limited reading")
+                     for kind, count in sorted(counts.items())])
+    return lines
+
+
 def render_audit(report):
+    _metadata_shape(report)
     lines = ["# Instruction audit", "", "Coverage: " + ("partial" if report.get("partial") else "declared area complete") + "."]
     if report.get("route_limit_reached"):
         lines.append("Route stream truncated by --max-routes; coverage is partial.")
@@ -361,6 +538,15 @@ def render_audit(report):
             lines.append("- Loader original-volume warning in environment group " + str(group["id"]) + ".")
     lines += ["", "Loader values are hypothetical; original bytes, included bytes and conditional references are separate.",
               "Directory subtotals measure unique reachable graph text, not filesystem directory size."]
+    lines += _reading_evidence(report, scenarios)
+    if report.get("metadata_only_files"):
+        lines += ["", "## Metadata-only file declarations", "",
+                  "Routes stopped by this policy use `excluded_metadata_only`. "
+                  "Stat sizes are separate from readable text totals; aliases are not summed. "
+                  "Bodies and their descendant references were not inspected under this policy."]
+        lines += _table(("Path", "Status", "Reason", "Metadata bytes"),
+                        [(row["path"], row["status"], row["reason"], row["metadata_bytes"])
+                         for row in report["metadata_only_files"]])
     for finding in report.get("findings", []):
         lines += ["", "- " + finding["id"] + " [" + finding["rule_id"] + "] " + finding["status"] + ": " + finding["explanation"]]
         if finding.get("disposition"):
@@ -388,7 +574,11 @@ def render_audit(report):
 
 def compare_reports(before, after, *, before_sha256=None):
     for report in (before, after): _report_shape(report)
-    comparable = before["scope"] == after["scope"]
+    def scope(report):
+        value = copy.deepcopy(report["scope"])
+        value["settings"]["metadata_only_paths"] = sorted(set(value["settings"].get("metadata_only_paths", [])))
+        return value
+    comparable = scope(before) == scope(after)
     old = {f["id"]: f for f in before.get("findings", [])}
     new = after.get("findings", [])
     def identity(f):
